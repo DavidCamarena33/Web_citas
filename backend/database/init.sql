@@ -30,10 +30,11 @@ CREATE TABLE usuarios (
 -- INTERESES (TIPO DE PLAN)
 -- ======================================
 CREATE TABLE intereses (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(100) NOT NULL UNIQUE,
-  descripcion TEXT
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE, 
+    categoria VARCHAR(50) DEFAULT 'General' 
 );
+
 
 -- ======================================
 -- PLANES
@@ -150,3 +151,71 @@ CREATE TABLE notificaciones (
     FOREIGN KEY (id_solicitud) REFERENCES solicitudes(id)
     ON DELETE CASCADE
 );
+
+-- ======================================
+-- POBLADO DE INTERESES (50 ITEMS)
+-- ======================================
+INSERT INTO intereses (nombre, categoria) VALUES
+-- 1. Deportes y Actividad Física
+('Senderismo', 'Deporte'),
+('Running', 'Deporte'),
+('Ciclismo', 'Deporte'),
+('Yoga', 'Deporte'),
+('Fútbol', 'Deporte'),
+('Pádel', 'Deporte'),
+('Escalada', 'Deporte'),
+('Surf', 'Deporte'),
+('Gym & Fitness', 'Deporte'),
+('Baile', 'Deporte'),
+('Crossfit', 'Deporte'),
+('Natación', 'Deporte'),
+
+-- 2. Gastronomía y Bebida
+('Café de especialidad', 'Gastronomía'),
+('Cerveza artesanal', 'Gastronomía'),
+('Vinos y Catas', 'Gastronomía'),
+('Comida Vegana', 'Gastronomía'),
+('Sushi', 'Gastronomía'),
+('Cocina Italiana', 'Gastronomía'),
+('Brunch', 'Gastronomía'),
+('Alta Cocina', 'Gastronomía'),
+('Street Food', 'Gastronomía'),
+('Cocinar', 'Gastronomía'),
+('Repostería', 'Gastronomía'),
+
+-- 3. Cultura y Arte
+('Cine', 'Cultura'),
+('Teatro', 'Cultura'),
+('Museos y Exposiciones', 'Cultura'),
+('Conciertos', 'Cultura'),
+('Lectura', 'Cultura'),
+('Fotografía', 'Cultura'),
+('Idiomas', 'Cultura'),
+('Escritura', 'Cultura'),
+('Pintura/Dibujo', 'Cultura'),
+
+-- 4. Ocio, Geek y Juegos
+('Videojuegos', 'Ocio'),
+('Juegos de Mesa', 'Ocio'),
+('Anime/Manga', 'Ocio'),
+('Escape Room', 'Ocio'),
+('Tecnología', 'Ocio'),
+('Series y Maratones', 'Ocio'),
+('Cosplay', 'Ocio'),
+('Rol (D&D)', 'Ocio'),
+
+-- 5. Estilo de Vida y Aire Libre
+('Viajes', 'Lifestyle'),
+('Mascotas', 'Lifestyle'),
+('Moda', 'Lifestyle'),
+('Meditación', 'Lifestyle'),
+('Jardinería', 'Lifestyle'),
+('Playa', 'Lifestyle'),
+('Camping', 'Lifestyle'),
+('Roadtrips', 'Lifestyle'),
+
+-- 6. Vida Social y Fiesta
+('Discotecas', 'Fiesta'),
+('Karaoke', 'Fiesta'),
+('Bares y Pubs', 'Fiesta'),
+('Festivales de Música', 'Fiesta');
