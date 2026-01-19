@@ -1,6 +1,4 @@
-CREATE DATABASE IF NOT EXISTS citas;
-
-use citas;
+use webcitas;
 
 CREATE TABLE intereses (
     id INT AUTO_INCREMENT PRIMARY KEY,
