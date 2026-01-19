@@ -10,7 +10,7 @@ La plataforma permite a los usuarios publicar y unirse a planes geolocalizados s
 ## 🎨 Prototipo de interfaz (Figma)
 El diseño y flujo de la aplicación han sido definidos previamente mediante un prototipo interactivo en Figma, que sirve como referencia visual para la experiencia de usuario (UI/UX) y la estructura de pantallas.
 
-👉 **[Ver prototipo en Figma](#)** *(Enlace pendiente)*
+👉 **[Ver prototipo en Figma](https://www.figma.com/make/CY3FZhmRpioiOXTtIblhrF/Citas-App-Prototipo-Frontend?t=oc0MhzYIz0CZI4Az-1)** 
 
 El prototipo incluye la navegación por mapa de planes, perfiles de usuario, gestión de solicitudes de asistencia y el sistema de mensajería integrado.
 
