@@ -13,7 +13,7 @@ export async function registro(nombre, email, edad ,contrasena, genero, orientac
   const hashPass = await bcrypt.hash(contrasena, 10);
 
   const [results] = await connection.query(
-    "insert into usuarios (nombre, email, fecha_nacimiento, contrasena, genero, orientacion) values(?,?,?,?,?,?)",
+    "insert into usuarios (nombre, email, edad, contrasena, genero, orientacion) values(?,?,?,?,?,?)",
     [nombre, email,edad, hashPass, genero, orientacion],
   );
   return results;

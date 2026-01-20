@@ -1,8 +1,9 @@
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken";
+import "dotenv/config";
 import { getByEmail, registro } from "../models/userModel.js";
 
-const secretKey = process.env.JWT_SECRET;
+const secretKey = process.env.JWT_SECRET || "paella";
 
 export async function login(req, res, next) {
   try {

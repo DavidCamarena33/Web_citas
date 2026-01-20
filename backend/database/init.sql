@@ -14,7 +14,7 @@ CREATE TABLE usuarios (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
-  fecha_nacimiento DATE NOT NULL,
+  edad DATE NOT NULL,
   contrasena VARCHAR(255) NOT NULL,
 
   genero ENUM('hombre','mujer') NOT NULL,
