@@ -4,9 +4,9 @@ let connection;
 try {
   connection = await mysql.createConnection({
     host: '127.0.0.1', 
-    user: 'alumno',
-    password: 'alumno',
-    database: 'proyecte',
+    user: 'root',
+    password: 'root',
+    database: 'citas_db',
     port: 3306 
   });
   console.log("✅ Conexión exitosa a la base de datos");

@@ -1,5 +1,5 @@
 import connection from "../config/db.js";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 
 export const getByEmail = async (email) => {
   const [results] = await connection.query(
