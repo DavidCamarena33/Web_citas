@@ -20,6 +20,8 @@ CREATE TABLE usuarios (
   orientacion ENUM('hetero','bi','homosexual') NOT NULL,
 
   descripcion TEXT,
+
+  direccion VARCHAR(255),
   lat DECIMAL(10,8) DEFAULT NULL,
   lng DECIMAL(11,8) DEFAULT NULL,
 
