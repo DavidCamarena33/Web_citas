@@ -29,13 +29,17 @@
 
     async function Login() {
         try {
-            const login = await axios.post('http://localhost:3000/api/login',form.value)
+            const login = await axios.post('http://localhost:3000/api/login', form.value, { withCredentials: true })
 
-            form.value = {
-                email: "",
-                contrasena: ""
+            console.log(login);
+            if(login.status === 200){
+                if(login.data.user.direccion === null){
+                    router.push('/ubicacion');
+                }else{
+                    router.push('/perfil');
+                }
             }
-            router.push('/')
+            
         } catch (error) {
             console.error("Error en login:", error);
             if (error.response) {

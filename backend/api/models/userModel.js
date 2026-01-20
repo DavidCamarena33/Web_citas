@@ -18,3 +18,11 @@ export async function registro(nombre, email, edad ,contrasena, genero, orientac
   );
   return results;
 }
+
+export async function ubicacionuser(direccion, longitud, latitud, id) {
+  const [actualizarubicacion] = await connection.query(
+    "update usuarios set direccion = ?, lng = ?, lat = ? where id = ?",
+    [direccion, longitud, latitud, id]
+  );
+  return actualizarubicacion;
+}
