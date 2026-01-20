@@ -37,7 +37,7 @@ export async function login(req, res, next) {
 export async function register(req, res, next) {
   try {
     const { nombre, email, edad, contrasena, genero, orientacion } = req.body;
-    if (!email || !contrasena || !nombre || !edad || !contrasena|| !genero|| !orientacion) {
+    if (!email || !contrasena || !nombre || !edad || !genero|| !orientacion) {
       return res
         .status(400)
         .json({ message: "Faltan campos" });
