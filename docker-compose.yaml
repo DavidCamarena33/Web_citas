@@ -2,11 +2,13 @@ name: webcitas
 services:
   mysql:
     image: mysql:8.0
-    env_file:
-      - ./.env
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: citas_db
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/database/seeder.sql:/docker-entrypoint-initdb.d/seeder.sql
     ports:
       - 3306:3306
 volumes:
