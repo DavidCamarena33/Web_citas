@@ -16,6 +16,7 @@ CREATE TABLE usuarios (
   email VARCHAR(150) NOT NULL UNIQUE,
   edad DATE NOT NULL,
   contrasena VARCHAR(255) NOT NULL,
+  rol ENUM('usuario','admin') NOT NULL DEFAULT 'usuario',
 
   genero ENUM('hombre','mujer') NOT NULL,
   orientacion ENUM('hetero','bi','homosexual') NOT NULL,
@@ -49,6 +50,7 @@ CREATE TABLE planes (
 
   titulo VARCHAR(150) NOT NULL,
   descripcion TEXT NOT NULL,
+  max_asistentes INT UNSIGNED NOT NULL DEFAULT 2,
 
   lat DECIMAL(10,8) NOT NULL,
   lng DECIMAL(11,8) NOT NULL,
@@ -159,32 +161,32 @@ CREATE TABLE notificaciones (
 -- POBLADO DE INTERESES (50 ITEMS)
 -- ======================================
 INSERT INTO intereses (nombre, categoria) VALUES
--- 1. Deportes y Actividad Física
+-- 1. Deportes y Actividad Fisica
 ('Senderismo', 'Deporte'),
 ('Running', 'Deporte'),
 ('Ciclismo', 'Deporte'),
 ('Yoga', 'Deporte'),
-('Fútbol', 'Deporte'),
-('Pádel', 'Deporte'),
+('Futbol', 'Deporte'),
+('Padel', 'Deporte'),
 ('Escalada', 'Deporte'),
 ('Surf', 'Deporte'),
 ('Gym & Fitness', 'Deporte'),
 ('Baile', 'Deporte'),
 ('Crossfit', 'Deporte'),
-('Natación', 'Deporte'),
+('Natacion', 'Deporte'),
 
--- 2. Gastronomía y Bebida
-('Café de especialidad', 'Gastronomía'),
-('Cerveza artesanal', 'Gastronomía'),
-('Vinos y Catas', 'Gastronomía'),
-('Comida Vegana', 'Gastronomía'),
-('Sushi', 'Gastronomía'),
-('Cocina Italiana', 'Gastronomía'),
-('Brunch', 'Gastronomía'),
-('Alta Cocina', 'Gastronomía'),
-('Street Food', 'Gastronomía'),
-('Cocinar', 'Gastronomía'),
-('Repostería', 'Gastronomía'),
+-- 2. Gastronomia y Bebida
+('Cafe de especialidad', 'Gastronomia'),
+('Cerveza artesanal', 'Gastronomia'),
+('Vinos y Catas', 'Gastronomia'),
+('Comida Vegana', 'Gastronomia'),
+('Sushi', 'Gastronomia'),
+('Cocina Italiana', 'Gastronomia'),
+('Brunch', 'Gastronomia'),
+('Alta Cocina', 'Gastronomia'),
+('Street Food', 'Gastronomia'),
+('Cocinar', 'Gastronomia'),
+('Reposteria', 'Gastronomia'),
 
 -- 3. Cultura y Arte
 ('Cine', 'Cultura'),
@@ -192,7 +194,7 @@ INSERT INTO intereses (nombre, categoria) VALUES
 ('Museos y Exposiciones', 'Cultura'),
 ('Conciertos', 'Cultura'),
 ('Lectura', 'Cultura'),
-('Fotografía', 'Cultura'),
+('Fotografia', 'Cultura'),
 ('Idiomas', 'Cultura'),
 ('Escritura', 'Cultura'),
 ('Pintura/Dibujo', 'Cultura'),
@@ -202,7 +204,7 @@ INSERT INTO intereses (nombre, categoria) VALUES
 ('Juegos de Mesa', 'Ocio'),
 ('Anime/Manga', 'Ocio'),
 ('Escape Room', 'Ocio'),
-('Tecnología', 'Ocio'),
+('Tecnologia', 'Ocio'),
 ('Series y Maratones', 'Ocio'),
 ('Cosplay', 'Ocio'),
 ('Rol (D&D)', 'Ocio'),
@@ -211,8 +213,8 @@ INSERT INTO intereses (nombre, categoria) VALUES
 ('Viajes', 'Lifestyle'),
 ('Mascotas', 'Lifestyle'),
 ('Moda', 'Lifestyle'),
-('Meditación', 'Lifestyle'),
-('Jardinería', 'Lifestyle'),
+('Meditacion', 'Lifestyle'),
+('Jardineria', 'Lifestyle'),
 ('Playa', 'Lifestyle'),
 ('Camping', 'Lifestyle'),
 ('Roadtrips', 'Lifestyle'),
@@ -221,4 +223,4 @@ INSERT INTO intereses (nombre, categoria) VALUES
 ('Discotecas', 'Fiesta'),
 ('Karaoke', 'Fiesta'),
 ('Bares y Pubs', 'Fiesta'),
-('Festivales de Música', 'Fiesta');
+('Festivales de Musica', 'Fiesta');

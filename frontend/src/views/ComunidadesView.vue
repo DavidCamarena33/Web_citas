@@ -6,7 +6,7 @@
     <main class="page-content">
       <div class="container comunidades-container">
         <div class="comunidades-header fade-in-up">
-          <h1>Communities</h1>
+          <h1>Comunidades</h1>
           <p class="text-muted">Descubre planes por categoría de interés</p>
         </div>
 
@@ -17,42 +17,16 @@
             :class="{ active: filtro === 'all' }"
             @click="filtro = 'all'"
           >
-            All
+            Todas
           </button>
           <button
+            v-for="tab in categoryTabs"
+            :key="tab.key"
             class="tab"
-            :class="{ active: filtro === 'Deporte' }"
-            @click="filtro = 'Deporte'"
+            :class="{ active: filtro === tab.key }"
+            @click="filtro = tab.key"
           >
-            Deporte
-          </button>
-          <button
-            class="tab"
-            :class="{ active: filtro === 'Gastronomía' }"
-            @click="filtro = 'Gastronomía'"
-          >
-            Gastronomía
-          </button>
-          <button
-            class="tab"
-            :class="{ active: filtro === 'Cultura' }"
-            @click="filtro = 'Cultura'"
-          >
-            Cultura
-          </button>
-          <button
-            class="tab"
-            :class="{ active: filtro === 'Ocio' }"
-            @click="filtro = 'Ocio'"
-          >
-            Ocio
-          </button>
-          <button
-            class="tab"
-            :class="{ active: filtro === 'Lifestyle' }"
-            @click="filtro = 'Lifestyle'"
-          >
-            Lifestyle
+            {{ tab.label }}
           </button>
         </div>
 
@@ -96,9 +70,13 @@
         </div>
 
         <!-- Selected category plans -->
-        <div v-if="selectedCat" class="cat-plans-section fade-in-up">
+        <div
+          v-if="selectedCat"
+          ref="planesSection"
+          class="cat-plans-section fade-in-up"
+        >
           <div class="cat-plans-header">
-            <h2>Upcoming Plans – {{ selectedCat }}</h2>
+            <h2>Planes de {{ selectedCat }}</h2>
             <button class="btn btn-ghost btn-sm" @click="selectedCat = null">
               ✕
             </button>
@@ -118,6 +96,7 @@
               v-for="plan in catPlanes"
               :key="plan.id"
               :plan="plan"
+              @click="$router.push(`/planes/${plan.id}`)"
               @join="handleJoin"
             />
           </div>
@@ -129,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, nextTick } from "vue";
 import NavBar from "../components/NavBar.vue";
 import SideDrawer from "../components/SideDrawer.vue";
 import PlanCard from "../components/PlanCard.vue";
@@ -141,6 +120,7 @@ const loading = ref(false);
 const filtro = ref("all");
 const intereses = ref([]);
 const selectedCat = ref(null);
+const planesSection = ref(null);
 const planesStore = usePlanesStore();
 
 const API = "http://localhost:3000/api";
@@ -171,9 +151,53 @@ const categories = computed(() => {
   return Object.values(map);
 });
 
+function normalizeCategory(value) {
+  return String(value || "")
+    .replaceAll("Ã¡", "a")
+    .replaceAll("Ã©", "e")
+    .replaceAll("Ã­", "i")
+    .replaceAll("Ã³", "o")
+    .replaceAll("Ãº", "u")
+    .replaceAll("Ã±", "n")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+const categoryLabelMap = {
+  deporte: "Deporte",
+  gastronomia: "Gastronomia",
+  cultura: "Cultura",
+  ocio: "Ocio",
+  lifestyle: "Lifestyle",
+  fiesta: "Fiesta",
+};
+
+const categoryTabs = computed(() => {
+  const desiredOrder = [
+    "deporte",
+    "gastronomia",
+    "cultura",
+    "ocio",
+    "lifestyle",
+    "fiesta",
+  ];
+
+  const availableKeys = new Set(
+    categories.value.map((c) => normalizeCategory(c.categoria))
+  );
+
+  return desiredOrder
+    .filter((key) => availableKeys.has(key))
+    .map((key) => ({ key, label: categoryLabelMap[key] || key }));
+});
+
 const filteredCats = computed(() => {
   if (filtro.value === "all") return categories.value;
-  return categories.value.filter((c) => c.categoria === filtro.value);
+  return categories.value.filter(
+    (c) => normalizeCategory(c.categoria) === filtro.value
+  );
 });
 
 const catPlanes = computed(() => {
@@ -185,8 +209,13 @@ function planesCount(cat) {
   return planesStore.planes.filter((p) => p.categoria === cat).length;
 }
 
-function selectCat(cat) {
+async function selectCat(cat) {
   selectedCat.value = cat.categoria;
+  await nextTick();
+  planesSection.value?.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
 }
 
 async function handleJoin(plan) {
@@ -196,26 +225,29 @@ async function handleJoin(plan) {
 }
 
 const gradients = {
-  Deporte: "linear-gradient(135deg, #FF6B35, #F7931E)",
-  Gastronomía: "linear-gradient(135deg, #E91E63, #FF5722)",
-  Cultura: "linear-gradient(135deg, #9C27B0, #673AB7)",
-  Ocio: "linear-gradient(135deg, #2196F3, #03A9F4)",
-  Lifestyle: "linear-gradient(135deg, #4CAF50, #8BC34A)",
-  Fiesta: "linear-gradient(135deg, #FF4081, #E91E63)",
+  deporte: "linear-gradient(135deg, #FF6B35, #F7931E)",
+  gastronomia: "linear-gradient(135deg, #E91E63, #FF5722)",
+  cultura: "linear-gradient(135deg, #9C27B0, #673AB7)",
+  ocio: "linear-gradient(135deg, #2196F3, #03A9F4)",
+  lifestyle: "linear-gradient(135deg, #4CAF50, #8BC34A)",
+  fiesta: "linear-gradient(135deg, #FF4081, #E91E63)",
 };
 const emojis = {
-  Deporte: "🏃",
-  Gastronomía: "🍽️",
-  Cultura: "🎭",
-  Ocio: "🎮",
-  Lifestyle: "🌿",
-  Fiesta: "🎉",
+  deporte: "🏃",
+  gastronomia: "🍽️",
+  cultura: "🎭",
+  ocio: "🎮",
+  lifestyle: "🌿",
+  fiesta: "🎉",
 };
 function catGradient(cat) {
-  return gradients[cat] || "linear-gradient(135deg, #607D8B, #90A4AE)";
+  return (
+    gradients[normalizeCategory(cat)] ||
+    "linear-gradient(135deg, #607D8B, #90A4AE)"
+  );
 }
 function catEmoji(cat) {
-  return emojis[cat] || "📌";
+  return emojis[normalizeCategory(cat)] || "📌";
 }
 </script>
 

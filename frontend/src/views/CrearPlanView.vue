@@ -66,6 +66,20 @@
             />
           </div>
 
+          <!-- Capacidad -->
+          <div class="form-group">
+            <label class="form-label">Capacidad máxima *</label>
+            <input
+              class="form-input"
+              v-model.number="form.max_asistentes"
+              type="number"
+              min="2"
+              max="100"
+              step="1"
+              required
+            />
+          </div>
+
           <!-- Ubicación -->
           <div class="form-group">
             <label class="form-label">Ubicación (Lat, Lng) *</label>
@@ -182,6 +196,7 @@ const form = ref({
   id_interes: "",
   descripcion: "",
   fecha_plan: "",
+  max_asistentes: 8,
   lat: "",
   lng: "",
 });

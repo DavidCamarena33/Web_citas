@@ -101,7 +101,11 @@ onMounted(async () => {
 });
 
 const hostInitial = computed(() => (plan.value?.host_nombre || "?")[0].toUpperCase());
-const spotsLeft = computed(() => Math.max(0, 8 - (plan.value?.spots_filled || 0)));
+const spotsLeft = computed(() => {
+  const maxAsistentes = Number(plan.value?.max_asistentes || 8);
+  const ocupadas = Number(plan.value?.spots_filled || 0);
+  return Math.max(0, maxAsistentes - ocupadas);
+});
 
 async function handleJoin() {
   joining.value = true;

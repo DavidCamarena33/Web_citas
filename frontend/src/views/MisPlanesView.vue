@@ -9,16 +9,16 @@
         <!-- Header -->
         <div class="mb-10 flex flex-col md-row justify-between gap-4 fade-in-up">
           <div>
-            <span class="section-label">Overview</span>
-            <h1>My Plans</h1>
-            <p class="text-muted mt-2">Manage your hosted events and track your upcoming activities.</p>
+            <span class="section-label">Resumen</span>
+            <h1 class="misplanes-title">Mis planes</h1>
+            <p class="text-muted mt-2">Gestiona tus planes y sigue tus actividades próximas.</p>
           </div>
           <div class="flex gap-3">
             <button class="btn btn-ghost history-btn" @click="tab = 'past'">
-              <span class="material-symbols-outlined">history</span> History
+              <span class="material-symbols-outlined">history</span> Historial
             </button>
             <button class="btn btn-primary shadow-primary" @click="$router.push('/crear-plan')">
-              <span class="material-symbols-outlined">add_circle</span> Create Plan
+              <span class="material-symbols-outlined">add_circle</span> Crear plan
             </button>
           </div>
         </div>
@@ -30,8 +30,8 @@
               <span class="material-symbols-outlined">calendar_month</span>
             </div>
             <div>
-              <p class="stat-label">Upcoming</p>
-              <p class="stat-value">{{ totalUpcoming }} Plans</p>
+              <p class="stat-label">Próximos</p>
+              <p class="stat-value">{{ totalUpcoming }} planes</p>
             </div>
           </div>
           <div class="stat-box">
@@ -39,8 +39,8 @@
               <span class="material-symbols-outlined">hourglass_top</span>
             </div>
             <div>
-              <p class="stat-label">Pending</p>
-              <p class="stat-value">{{ totalPending }} Requests</p>
+              <p class="stat-label">Pendientes</p>
+              <p class="stat-value">{{ totalPending }} solicitudes</p>
             </div>
           </div>
           <div class="stat-box">
@@ -48,93 +48,95 @@
               <span class="material-symbols-outlined">volunteer_activism</span>
             </div>
             <div>
-              <p class="stat-label">Hosting</p>
-              <p class="stat-value">{{ totalHosting }} Events</p>
+              <p class="stat-label">Organizando</p>
+              <p class="stat-value">{{ totalHosting }} planes</p>
             </div>
           </div>
         </div>
 
         <!-- Tabs Underline -->
         <div class="mb-8 tabs-underline-container">
-          <div class="flex gap-8">
+          <div class="tabs-row">
             <button class="tab-underline" :class="{ active: tab === 'upcoming' }" @click="tab = 'upcoming'">
-              Upcoming
+              Próximos
             </button>
             <button class="tab-underline" :class="{ active: tab === 'hosting' }" @click="tab = 'hosting'">
-              Hosting
+              Organizando
             </button>
             <button class="tab-underline" :class="{ active: tab === 'pending' }" @click="tab = 'pending'">
-              Pending Approval
+              Pendientes
             </button>
             <button class="tab-underline" :class="{ active: tab === 'past' }" @click="tab = 'past'">
-              Past Events
+              Pasados
             </button>
           </div>
         </div>
 
-        <!-- Loading -->
-        <div v-if="loading" class="loading-center">
-          <div class="spinner"></div>
-        </div>
+        <div class="after-tabs-spacing">
+          <!-- Loading -->
+          <div v-if="loading" class="loading-center">
+            <div class="spinner"></div>
+          </div>
 
-        <!-- Empty -->
-        <div v-else-if="filteredPlanes.length === 0" class="empty-state">
-          <span class="empty-icon material-symbols-outlined">search_off</span>
-          <p>No hay planes en esta categoría.</p>
-          <button class="btn btn-primary mt-4" @click="$router.push('/discover')">
-            Explorar planes
-          </button>
-        </div>
+          <!-- Empty -->
+          <div v-else-if="filteredPlanes.length === 0" class="empty-state">
+            <span class="empty-icon material-symbols-outlined">search_off</span>
+            <p>No hay planes en esta categoría.</p>
+            <button class="btn btn-primary mt-4" @click="$router.push('/discover')">
+              Explorar planes
+            </button>
+          </div>
 
-        <!-- Plans List Horizontal -->
-        <div v-else class="flex-col gap-6 fade-in-up">
-          <div v-for="plan in filteredPlanes" :key="plan.id" class="horizontal-plan-card" @click="openPlan(plan)">
-            <div class="h-img-wrap">
-              <img v-if="plan.foto" :src="plan.foto" :alt="plan.titulo" class="h-img" />
-              <div v-else class="h-img placeholder-img">
-                <span class="material-symbols-outlined text-4xl">join_inner</span>
-              </div>
-              <div class="spots-pill" v-if="plan.tipo !== 'pasado'">
-                <span class="text-primary">{{ spotsFilled(plan) }}</span> / 8 spots filled
-              </div>
-            </div>
-
-            <div class="h-body">
-              <div class="flex-1">
-                <div class="h-meta-top">
-                  <span class="badge" :class="tipoBadgeClass(plan.tipo)">
-                    <span class="material-symbols-outlined mr-1" style="font-size: 14px;">{{ tipoIcon(plan.tipo) }}</span>
-                    {{ tipoLabel(plan.tipo) }}
-                  </span>
-                  <span class="text-xs text-muted font-semibold">Created recently</span>
+          <!-- Plans List Horizontal -->
+          <div v-else class="flex-col gap-6 fade-in-up">
+            <div v-for="plan in filteredPlanes" :key="plan.id" class="horizontal-plan-card" @click="openPlan(plan)">
+              <div class="h-img-wrap">
+                <img v-if="plan.foto" :src="plan.foto" :alt="plan.titulo" class="h-img" />
+                <div v-else class="h-img placeholder-img">
+                  <span class="material-symbols-outlined text-4xl">join_inner</span>
                 </div>
-                
-                <h3 class="h-title">{{ plan.titulo }}</h3>
-                
-                <div class="h-meta-bottom">
-                  <div class="flex items-center gap-1">
-                    <span class="material-symbols-outlined text-base">calendar_today</span>
-                    <span v-if="plan.fecha_plan">{{ formatDate(plan.fecha_plan) }}</span>
-                    <span v-else>Fecha por fijar</span>
-                  </div>
-                  <div class="flex items-center gap-1" v-if="plan.direccion || plan.lat">
-                    <span class="material-symbols-outlined text-base">location_on</span>
-                    <span>{{ plan.direccion || 'Ubicación oculta' }}</span>
-                  </div>
+                <div class="spots-pill" v-if="plan.tipo !== 'pasado'">
+                  <span class="text-primary">{{ spotsFilled(plan) }}</span> / {{ maxAsistentes(plan) }} plazas ocupadas
                 </div>
               </div>
 
-              <!-- Actions on the right -->
-              <div class="h-actions">
-                <button v-if="plan.tipo === 'hosting'" class="btn-manage" @click.stop="$router.push(`/planes/${plan.id}`)">
-                  Manage Requests
-                </button>
-                <button v-else-if="plan.tipo === 'aceptada'" class="btn-chat" @click.stop="$router.push('/mensajes')">
-                  <span class="material-symbols-outlined text-lg">chat</span> Group Chat
-                </button>
-                <button v-else-if="plan.tipo === 'pendiente'" class="btn-pending-action" disabled>
-                  Request Sent
-                </button>
+              <div class="h-body">
+                <div class="flex-1">
+                  <div class="h-meta-top">
+                    <span class="badge" :class="tipoBadgeClass(plan.tipo)">
+                      <span class="material-symbols-outlined mr-1" style="font-size: 14px;">{{ tipoIcon(plan.tipo) }}</span>
+                      {{ tipoLabel(plan.tipo) }}
+                    </span>
+                    <span class="text-xs text-muted font-semibold">Creado recientemente</span>
+                  </div>
+                  
+                  <h3 class="h-title">{{ plan.titulo }}</h3>
+                  
+                  <div class="h-meta-bottom">
+                    <div class="flex items-center gap-1">
+                      <span class="material-symbols-outlined text-base">calendar_today</span>
+                      <span v-if="plan.fecha_plan">{{ formatDate(plan.fecha_plan) }}</span>
+                      <span v-else>Fecha por fijar</span>
+                    </div>
+                    <div class="flex items-center gap-1" v-if="plan.direccion || plan.lat">
+                      <span class="material-symbols-outlined text-base">location_on</span>
+                      <span>{{ plan.direccion || 'Ubicación oculta' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Actions on the right -->
+                <div class="h-actions">
+                  <button v-if="plan.tipo === 'hosting'" class="btn-manage" @click.stop="$router.push(`/planes/${plan.id}`)">
+                    Gestionar solicitudes
+                  </button>
+                  <button v-else-if="plan.tipo === 'aceptada'" class="btn-chat" @click.stop="$router.push('/mensajes')">
+                    <span class="material-symbols-outlined text-lg">chat</span> Chat
+                  </button>
+                  <button v-else-if="plan.tipo === 'pendiente'" class="btn-pending-action" disabled>
+                    Solicitud enviada
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -184,7 +186,10 @@ const totalPending = computed(() => allPlanes.value.filter((p) => p.tipo === "pe
 const totalUpcoming = computed(() => allPlanes.value.filter((p) => p.tipo !== 'pasado').length);
 
 function spotsFilled(plan) {
-  return plan.spots_filled || 3;
+  return plan.spots_filled || 0;
+}
+function maxAsistentes(plan) {
+  return plan.max_asistentes || 8;
 }
 
 function openPlan(plan) {
@@ -197,9 +202,9 @@ function tipoBadgeClass(tipo) {
   return "badge-pending text-amber-700 bg-amber-100";
 }
 function tipoLabel(tipo) {
-  if (tipo === "hosting") return "Host";
-  if (tipo === "aceptada") return "Confirmed";
-  return "Awaiting Approval";
+  if (tipo === "hosting") return "Organizas";
+  if (tipo === "aceptada") return "Aceptado";
+  return "Pendiente";
 }
 function tipoIcon(tipo) {
   if (tipo === 'hosting') return 'star';
@@ -218,6 +223,11 @@ function formatDate(d) {
   background: linear-gradient(135deg, #f8f5f6 0%, #ffeef1 50%, #fdf2f4 100%);
   min-height: 100vh;
 }
+
+.page-content.py-8 {
+  padding-top: calc(76px + 2rem);
+}
+
 .mx-auto { max-width: 1200px; margin: 0 auto; }
 .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
 .lg-px-20 { max-width: 1300px; margin: 0 auto; }
@@ -243,6 +253,10 @@ function formatDate(d) {
 .history-btn:hover {
   border-color: rgba(244, 63, 94, 0.3);
   color: var(--primary);
+}
+
+.misplanes-title {
+  padding: 0.25rem 0;
 }
 
 /* 3 Stats Grid */
@@ -276,6 +290,16 @@ function formatDate(d) {
 /* Tabs Underline */
 .tabs-underline-container {
   border-bottom: 1px solid var(--card-border);
+  padding-top: 0.5rem;
+}
+.tabs-row {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0 0.25rem;
+  flex-wrap: wrap;
+}
+.after-tabs-spacing {
+  padding-top: 1rem;
 }
 .tab-underline {
   position: relative;

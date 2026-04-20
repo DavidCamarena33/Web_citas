@@ -15,16 +15,16 @@
         <!-- Nav Links (desktop) -->
         <div class="navbar-links hidden-mobile">
           <RouterLink to="/discover" class="nav-link" active-class="nav-link-active">
-            Discover
+            Descubrir
           </RouterLink>
           <RouterLink to="/mis-planes" class="nav-link" active-class="nav-link-active">
-            My Plans
+            Mis planes
           </RouterLink>
           <RouterLink to="/mensajes" class="nav-link" active-class="nav-link-active">
-            Messages
+            Mensajes
           </RouterLink>
           <RouterLink to="/comunidades" class="nav-link" active-class="nav-link-active">
-            Communities
+            Comunidades
           </RouterLink>
         </div>
       </div>
@@ -36,13 +36,17 @@
           <span class="search-icon material-symbols-outlined">search</span>
           <input 
             type="text" 
-            placeholder="Find activities..." 
+            placeholder="Buscar actividades..." 
             class="search-input"
           />
         </div>
 
         <button class="nav-btn-icon shadow-sm hidden-mobile">
           <span class="material-symbols-outlined">notifications</span>
+        </button>
+
+        <button class="btn btn-ghost btn-sm hidden-mobile logout-btn" @click="cerrarSesion">
+          Cerrar sesion
         </button>
 
         <!-- Avatar -->
@@ -62,11 +66,13 @@
 
 <script setup>
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/authStore";
 
 defineEmits(["toggle-drawer", "notification"]);
 
 const auth = useAuthStore();
+const router = useRouter();
 const avatarUrl = computed(() => null); // will come from perfil data
 const initials = computed(() => {
   const name = auth.user?.nombre || "";
@@ -79,6 +85,11 @@ const initials = computed(() => {
       .slice(0, 2) || "?"
   );
 });
+
+async function cerrarSesion() {
+  await auth.logout();
+  router.push("/login");
+}
 </script>
 
 <style scoped>
@@ -201,6 +212,9 @@ const initials = computed(() => {
   color: var(--text-muted); cursor: pointer;
 }
 .nav-btn-icon:hover { color: var(--primary); }
+.logout-btn {
+  white-space: nowrap;
+}
 
 /* AVATAR */
 

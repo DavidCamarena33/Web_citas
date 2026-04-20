@@ -4,7 +4,7 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 export async function listarPlanes(req, res, next) {
   try {
-    const planes = await getPlanes();
+    const planes = await getPlanes({ excludeUserId: req.id });
     const planesConFoto = planes.map(p => ({
       ...p,
       foto: p.foto ? `${BASE_URL}/uploads/${p.foto.split('/').pop()}` : null,
@@ -29,11 +29,25 @@ export async function detallePlan(req, res, next) {
 export async function nuevoPlan(req, res, next) {
   try {
     const id_usuario = req.id;
-    const { id_interes, titulo, descripcion, lat, lng, fecha_plan } = req.body;
-    if (!id_interes || !titulo || !descripcion || !lat || !lng) {
+    const { id_interes, titulo, descripcion, max_asistentes, lat, lng, fecha_plan } = req.body;
+    if (!id_interes || !titulo || !descripcion || !lat || !lng || !max_asistentes) {
       return res.status(400).json({ message: 'Faltan campos obligatorios' });
     }
-    const result = await crearPlan(id_usuario, id_interes, titulo, descripcion, lat, lng, fecha_plan);
+    const maxAsistentes = Number(max_asistentes);
+    if (!Number.isInteger(maxAsistentes) || maxAsistentes < 2 || maxAsistentes > 100) {
+      return res.status(400).json({ message: 'La capacidad debe estar entre 2 y 100 personas' });
+    }
+
+    const result = await crearPlan(
+      id_usuario,
+      id_interes,
+      titulo,
+      descripcion,
+      maxAsistentes,
+      lat,
+      lng,
+      fecha_plan
+    );
     const id_plan = result.insertId;
 
     if (req.files && req.files.length > 0) {

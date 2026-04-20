@@ -1,10 +1,17 @@
-import { crearSolicitud, getSolicitudesPlan, getMisSolicitudes, actualizarEstado } from "../models/solicitudesModel.js";
+import { crearSolicitud, getSolicitudesPlan, getMisSolicitudes, actualizarEstado, getCupoPlan, getSolicitudById } from "../models/solicitudesModel.js";
 
 export async function solicitar(req, res, next) {
   try {
     const id_solicitante = req.id;
     const { id_plan, mensaje } = req.body;
     if (!id_plan) return res.status(400).json({ message: 'Falta id_plan' });
+
+    const cupo = await getCupoPlan(id_plan);
+    if (!cupo) return res.status(404).json({ message: 'Plan no encontrado' });
+    if (Number(cupo.aceptadas) >= Number(cupo.max_asistentes)) {
+      return res.status(409).json({ message: 'Este plan ya está completo' });
+    }
+
     const result = await crearSolicitud(id_plan, id_solicitante, mensaje);
     return res.status(201).json({ message: 'Solicitud enviada', id: result.insertId });
   } catch (err) {
@@ -38,6 +45,16 @@ export async function responderSolicitud(req, res, next) {
     const { estado } = req.body;
     if (!['aceptada', 'rechazada'].includes(estado)) {
       return res.status(400).json({ message: 'Estado inválido' });
+    }
+    if (estado === 'aceptada') {
+      const solicitud = await getSolicitudById(req.params.id);
+      if (!solicitud) {
+        return res.status(404).json({ message: 'Solicitud no encontrada' });
+      }
+      const cupo = await getCupoPlan(solicitud.id_plan);
+      if (cupo && Number(cupo.aceptadas) >= Number(cupo.max_asistentes)) {
+        return res.status(409).json({ message: 'No puedes aceptar más personas: cupo completo' });
+      }
     }
     await actualizarEstado(req.params.id, estado);
     return res.status(200).json({ message: `Solicitud ${estado}` });

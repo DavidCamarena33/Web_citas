@@ -17,28 +17,28 @@
               class="drawer-link"
               @click="$emit('close')"
             >
-              <span class="drawer-link-icon">🔍</span> Discover
+              <span class="drawer-link-icon">🔍</span> Descubrir
             </RouterLink>
             <RouterLink
               to="/mis-planes"
               class="drawer-link"
               @click="$emit('close')"
             >
-              <span class="drawer-link-icon">📋</span> My Plans
+              <span class="drawer-link-icon">📋</span> Mis planes
             </RouterLink>
             <RouterLink
               to="/mensajes"
               class="drawer-link"
               @click="$emit('close')"
             >
-              <span class="drawer-link-icon">💬</span> Messages
+              <span class="drawer-link-icon">💬</span> Mensajes
             </RouterLink>
             <RouterLink
               to="/comunidades"
               class="drawer-link"
               @click="$emit('close')"
             >
-              <span class="drawer-link-icon">🏘️</span> Communities
+              <span class="drawer-link-icon">🏘️</span> Comunidades
             </RouterLink>
           </nav>
 
@@ -56,6 +56,9 @@
                 <div class="text-sm text-muted">Ver perfil</div>
               </div>
             </RouterLink>
+            <button class="btn btn-primary btn-sm drawer-logout-btn" @click="cerrarSesion">
+              Cerrar sesion
+            </button>
           </div>
         </div>
       </div>
@@ -65,12 +68,14 @@
 
 <script setup>
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/authStore";
 
 defineProps({ open: Boolean });
-defineEmits(["close"]);
+const emit = defineEmits(["close"]);
 
 const auth = useAuthStore();
+const router = useRouter();
 const userName = computed(() => auth.user?.nombre || "Usuario");
 const initials = computed(() => {
   const n = userName.value;
@@ -81,6 +86,12 @@ const initials = computed(() => {
     .toUpperCase()
     .slice(0, 2);
 });
+
+async function cerrarSesion() {
+  await auth.logout();
+  emit("close");
+  router.push("/login");
+}
 </script>
 
 <style scoped>
@@ -160,6 +171,11 @@ const initials = computed(() => {
 .drawer-footer {
   border-top: 1px solid var(--card-border);
   padding-top: 1.5rem;
+}
+.drawer-logout-btn {
+  margin-top: 1rem;
+  width: 100%;
+  justify-content: center;
 }
 .drawer-profile-link {
   display: flex;

@@ -8,7 +8,7 @@
         <!-- Sidebar: Conversations -->
         <aside class="conv-sidebar">
           <div class="conv-sidebar-header">
-            <h2>Messages</h2>
+            <h2>Mensajes</h2>
           </div>
           <div v-if="loading" class="loading-center">
             <div class="spinner"></div>

@@ -18,20 +18,20 @@
     <div class="pc-body">
       <div class="pc-host">
         <div class="pc-host-avatar"></div>
-        <span class="pc-host-name">{{ hostInitial }}'s Plan</span>
+        <span class="pc-host-name">Plan de {{ hostName }}</span>
       </div>
 
       <h4 class="pc-title">{{ plan.titulo }}</h4>
 
       <div class="pc-date">
         <span class="material-symbols-outlined" style="font-size: 0.875rem">schedule</span>
-        {{ formatDate(plan.fecha_plan) || 'TBA' }}
+        {{ formatDate(plan.fecha_plan) || 'Por definir' }}
       </div>
 
       <p class="pc-location">{{ locationLabel }}</p>
 
       <button class="pc-btn" @click.stop="$emit('join', plan)">
-        Join Plan
+        Unirme al plan
       </button>
     </div>
   </div>
@@ -46,9 +46,7 @@ const props = defineProps({
 });
 defineEmits(["click", "join"]);
 
-const hostInitial = computed(() =>
-  (props.plan.host_nombre || "?")[0].toUpperCase(),
-);
+const hostName = computed(() => props.plan.host_nombre || "Usuario");
 
 const excerpt = computed(() => {
   const d = props.plan.descripcion || "";

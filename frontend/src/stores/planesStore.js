@@ -13,7 +13,7 @@ export const usePlanesStore = defineStore('planes', {
     async fetchPlanes() {
       this.loading = true;
       try {
-        const { data } = await axios.get(`${API}/planes`);
+        const { data } = await axios.get(`${API}/planes`, { withCredentials: true });
         this.planes = data;
       } finally {
         this.loading = false;

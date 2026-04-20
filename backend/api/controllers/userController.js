@@ -108,3 +108,12 @@ export async function actualizarDescripcion(req, res, next) {
     next(err);
   }
 }
+
+export async function logout(req, res, next) {
+  try {
+    res.clearCookie("galeta", { httpOnly: true });
+    return res.status(200).json({ message: "Sesion cerrada" });
+  } catch (err) {
+    next(err);
+  }
+}

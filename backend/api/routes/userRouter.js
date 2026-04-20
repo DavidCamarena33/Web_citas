@@ -1,4 +1,4 @@
-import { login, register, ActualizarUbicacionUser, VerificarSesion, getPerfil, subirFoto, actualizarDescripcion } from "../controllers/userController.js";
+import { login, logout, register, ActualizarUbicacionUser, VerificarSesion, getPerfil, subirFoto, actualizarDescripcion } from "../controllers/userController.js";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 import { upload } from "../middlewares/uploadMiddleware.js";
 import express from "express";
@@ -6,6 +6,7 @@ import express from "express";
 const router = express.Router();
 
 router.post("/login", login);
+router.post("/logout", logout);
 router.post("/register", register);
 router.put("/actualizarubicacion", verifyToken, ActualizarUbicacionUser);
 router.get('/verificar-sesion', verifyToken, VerificarSesion);

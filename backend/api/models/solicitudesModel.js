@@ -19,6 +19,14 @@ export async function getSolicitudesPlan(id_plan) {
   return rows;
 }
 
+export async function getSolicitudById(id) {
+  const [[row]] = await connection.query(
+    `SELECT * FROM solicitudes WHERE id = ?`,
+    [id]
+  );
+  return row || null;
+}
+
 export async function getMisSolicitudes(id_usuario) {
   const [rows] = await connection.query(
     `SELECT s.*, p.titulo AS plan_titulo, u.nombre AS host_nombre
@@ -30,6 +38,17 @@ export async function getMisSolicitudes(id_usuario) {
     [id_usuario]
   );
   return rows;
+}
+
+export async function getCupoPlan(id_plan) {
+  const [[plan]] = await connection.query(
+    `SELECT p.max_asistentes,
+            (SELECT COUNT(*) FROM solicitudes s WHERE s.id_plan = p.id AND s.estado = 'aceptada') AS aceptadas
+     FROM planes p
+     WHERE p.id = ?`,
+    [id_plan]
+  );
+  return plan || null;
 }
 
 export async function actualizarEstado(id, estado) {

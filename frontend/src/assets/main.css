@@ -54,6 +54,8 @@
 
 html {
   scroll-behavior: smooth;
+  scrollbar-gutter: stable both-edges;
+  overflow-y: scroll;
 }
 
 body {
@@ -67,6 +69,7 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  overflow-y: scroll;
 }
 
 a {

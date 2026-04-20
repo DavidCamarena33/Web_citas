@@ -45,6 +45,12 @@
                 <p class="text-muted text-sm">
                   {{ perfil.direccion || "Ubicación no establecida" }}
                 </p>
+                <button
+                  class="btn btn-primary btn-sm location-btn"
+                  @click="$router.push('/ubicacion')"
+                >
+                  Cambiar ubicacion
+                </button>
               </div>
 
               <!-- Stats -->
@@ -53,19 +59,19 @@
                   <span class="stat-num">{{
                     perfil.stats?.planes_hosted || 0
                   }}</span>
-                  <span class="stat-label">Planes Hosting</span>
+                  <span class="stat-label">Planes creados</span>
                 </div>
                 <div class="stat-divider"></div>
                 <div class="stat-block">
                   <span class="stat-num">{{
                     perfil.stats?.planes_joined || 0
                   }}</span>
-                  <span class="stat-label">Planes Joined</span>
+                  <span class="stat-label">Planes unidos</span>
                 </div>
                 <div class="stat-divider"></div>
                 <div class="stat-block">
                   <span class="stat-num text-primary">⭐ 4.9</span>
-                  <span class="stat-label">Rating</span>
+                  <span class="stat-label">Valoración</span>
                 </div>
               </div>
             </div>
@@ -74,7 +80,7 @@
           <!-- Bio / Description -->
           <div class="card perfil-bio-card fade-in-up">
             <div class="perfil-bio-header">
-              <h3>About me</h3>
+              <h3>Sobre mí</h3>
               <button
                 class="btn btn-ghost btn-sm"
                 @click="editingBio = !editingBio"
@@ -300,6 +306,11 @@ async function saveBio() {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+}
+.location-btn {
+  width: fit-content;
+  margin-top: 0.35rem;
+  box-shadow: none;
 }
 .perfil-name {
   font-size: 1.6rem;
