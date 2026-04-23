@@ -276,8 +276,48 @@ async function Register() {
 }
 
 @media (max-width: 480px) {
+  .auth-page {
+    padding: 1rem;
+  }
+
+  .auth-card {
+    padding: 1.25rem;
+    border-radius: 1rem;
+  }
+
+  .auth-title {
+    font-size: 1.4rem;
+  }
+
   .form-row {
     grid-template-columns: 1fr;
+  }
+
+  .c1 {
+    width: 240px;
+    height: 240px;
+    top: -90px;
+    right: -90px;
+  }
+
+  .c2 {
+    width: 150px;
+    height: 150px;
+  }
+
+  .c3 {
+    width: 90px;
+    height: 90px;
+  }
+}
+
+@media (max-width: 768px) {
+  .auth-page {
+    padding: 1.25rem;
+  }
+
+  .auth-card {
+    padding: 1.5rem;
   }
 }
 </style>

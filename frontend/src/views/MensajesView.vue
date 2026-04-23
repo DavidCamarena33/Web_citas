@@ -72,9 +72,9 @@
               v-for="msg in mensajes"
               :key="msg.id"
               class="msg-bubble"
-              :class="msg.id_emisor === myId ? 'msg-sent' : 'msg-recv'"
+              :class="Number(msg.id_emisor) === myId ? 'msg-sent' : 'msg-recv'"
             >
-              <span class="msg-sender text-xs" v-if="msg.id_emisor !== myId">{{
+              <span class="msg-sender text-xs" v-if="Number(msg.id_emisor) !== myId">{{
                 msg.emisor_nombre
               }}</span>
               {{ msg.mensaje }}
@@ -115,7 +115,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed } from "vue";
+import { ref, onMounted, onBeforeUnmount, nextTick, computed } from "vue";
 import NavBar from "../components/NavBar.vue";
 import SideDrawer from "../components/SideDrawer.vue";
 import axios from "axios";
@@ -130,39 +130,74 @@ const activeConv = ref(null);
 const mensajes = ref([]);
 const newMsg = ref("");
 const messagesEl = ref(null);
+let pollingId = null;
 
-const myId = computed(() => auth.user?.id);
+const myId = computed(() => Number(auth.user?.id || 0));
 
 const API = "http://localhost:3000/api";
 
 onMounted(async () => {
   loading.value = true;
   try {
-    const { data } = await axios.get(`${API}/mensajes/conversaciones`, {
-      withCredentials: true,
-    });
-    conversaciones.value = data;
+    if (!auth.user && !auth.isAuthenticated) {
+      await auth.checkAuth();
+    }
+    await loadConversaciones();
+    startPolling();
   } catch (e) {
     console.error(e);
+  } finally {
+    loading.value = false;
   }
-  loading.value = false;
 });
 
-async function selectConv(conv) {
-  activeConv.value = conv;
-  loadingMsgs.value = true;
+onBeforeUnmount(() => {
+  stopPolling();
+});
+
+async function loadConversaciones() {
+  const { data } = await axios.get(`${API}/mensajes/conversaciones`, {
+    withCredentials: true,
+  });
+  conversaciones.value = data;
+
+  if (activeConv.value) {
+    const updatedConv = data.find(
+      (conv) => conv.solicitud_id === activeConv.value.solicitud_id
+    );
+    activeConv.value = updatedConv || null;
+  }
+}
+
+async function loadMensajes({ showLoader = false, keepScroll = true } = {}) {
+  if (!activeConv.value) {
+    mensajes.value = [];
+    return;
+  }
+
+  const shouldStickToBottom = keepScroll ? isNearBottom() : true;
+  if (showLoader) loadingMsgs.value = true;
+
   try {
-    const { data } = await axios.get(`${API}/mensajes/${conv.solicitud_id}`, {
+    const { data } = await axios.get(`${API}/mensajes/${activeConv.value.solicitud_id}`, {
       withCredentials: true,
     });
     mensajes.value = data;
   } catch (e) {
     mensajes.value = [];
+  } finally {
+    if (showLoader) loadingMsgs.value = false;
   }
-  loadingMsgs.value = false;
+
   await nextTick();
-  if (messagesEl.value)
-    messagesEl.value.scrollTop = messagesEl.value.scrollHeight;
+  if (shouldStickToBottom) {
+    scrollToBottom();
+  }
+}
+
+async function selectConv(conv) {
+  activeConv.value = conv;
+  await loadMensajes({ showLoader: true, keepScroll: false });
 }
 
 async function sendMsg() {
@@ -177,10 +212,43 @@ async function sendMsg() {
       { withCredentials: true },
     );
     newMsg.value = "";
-    await selectConv(activeConv.value);
+    await Promise.all([loadConversaciones(), loadMensajes({ keepScroll: false })]);
   } catch (e) {
     console.error(e);
   }
+}
+
+function startPolling() {
+  stopPolling();
+  pollingId = window.setInterval(async () => {
+    try {
+      await loadConversaciones();
+      if (activeConv.value) {
+        await loadMensajes();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, 2000);
+}
+
+function stopPolling() {
+  if (pollingId) {
+    window.clearInterval(pollingId);
+    pollingId = null;
+  }
+}
+
+function scrollToBottom() {
+  if (messagesEl.value) {
+    messagesEl.value.scrollTop = messagesEl.value.scrollHeight;
+  }
+}
+
+function isNearBottom() {
+  if (!messagesEl.value) return true;
+  const { scrollTop, scrollHeight, clientHeight } = messagesEl.value;
+  return scrollHeight - (scrollTop + clientHeight) < 80;
 }
 
 function timeAgo(d) {
@@ -335,6 +403,7 @@ function formatTime(d) {
 @media (max-width: 700px) {
   .mensajes-layout {
     grid-template-columns: 1fr;
+    height: calc(100vh - 76px);
   }
   .chat-window {
     display: none;
@@ -344,6 +413,35 @@ function formatTime(d) {
   }
   .mensajes-layout.chat-open .chat-window {
     display: flex;
+  }
+
+  .conv-sidebar-header,
+  .chat-header,
+  .chat-input-row {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .chat-messages {
+    padding: 1rem;
+  }
+
+  .msg-bubble {
+    max-width: 88%;
+  }
+}
+
+@media (max-width: 480px) {
+  .conv-item {
+    padding: 0.8rem 1rem;
+  }
+
+  .chat-input-row {
+    flex-direction: column;
+  }
+
+  .chat-input-row .btn {
+    width: 100%;
   }
 }
 </style>

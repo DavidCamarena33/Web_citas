@@ -96,6 +96,7 @@
               v-for="plan in catPlanes"
               :key="plan.id"
               :plan="plan"
+              :join-status="plan.joinStatus"
               @click="$router.push(`/planes/${plan.id}`)"
               @join="handleJoin"
             />
@@ -114,6 +115,8 @@ import SideDrawer from "../components/SideDrawer.vue";
 import PlanCard from "../components/PlanCard.vue";
 import axios from "axios";
 import { usePlanesStore } from "../stores/planesStore";
+import { useAuthStore } from "../stores/authStore";
+import { calculateDistanceKm, formatDistanceKm } from "../utils/location";
 
 const drawerOpen = ref(false);
 const loading = ref(false);
@@ -122,6 +125,8 @@ const intereses = ref([]);
 const selectedCat = ref(null);
 const planesSection = ref(null);
 const planesStore = usePlanesStore();
+const authStore = useAuthStore();
+const userCoords = ref(null);
 
 const API = "http://localhost:3000/api";
 
@@ -131,6 +136,8 @@ onMounted(async () => {
     const [intRes] = await Promise.all([
       axios.get(`${API}/intereses`),
       planesStore.fetchPlanes(),
+      planesStore.fetchMisPlanes(),
+      loadUserCoords(),
     ]);
     intereses.value = intRes.data;
   } catch (e) {
@@ -200,9 +207,26 @@ const filteredCats = computed(() => {
   );
 });
 
+const joinStatusByPlanId = computed(() => {
+  const map = new Map();
+  planesStore.misPlanes.forEach((plan) => {
+    if (plan.tipo === "hosting") return;
+    map.set(plan.id, plan.tipo);
+  });
+  return map;
+});
+
 const catPlanes = computed(() => {
   if (!selectedCat.value) return [];
-  return planesStore.planes.filter((p) => p.categoria === selectedCat.value);
+  return planesStore.planes
+    .filter((p) => p.categoria === selectedCat.value)
+    .map((plan) => ({
+      ...plan,
+      joinStatus: joinStatusByPlanId.value.get(plan.id) || "",
+      distanceLabel: formatDistanceKm(
+        calculateDistanceKm(userCoords.value, { lat: plan.lat, lng: plan.lng })
+      ),
+    }));
 });
 
 function planesCount(cat) {
@@ -221,6 +245,7 @@ async function selectCat(cat) {
 async function handleJoin(plan) {
   try {
     await planesStore.quickJoin(plan.id);
+    await planesStore.fetchMisPlanes();
   } catch (e) {}
 }
 
@@ -248,6 +273,18 @@ function catGradient(cat) {
 }
 function catEmoji(cat) {
   return emojis[normalizeCategory(cat)] || "📌";
+}
+
+async function loadUserCoords() {
+  try {
+    const perfil = await authStore.fetchPerfil();
+    if (perfil?.lat && perfil?.lng) {
+      userCoords.value = {
+        lat: Number(perfil.lat),
+        lng: Number(perfil.lng),
+      };
+    }
+  } catch (e) {}
 }
 </script>
 
@@ -308,5 +345,37 @@ function catEmoji(cat) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
   gap: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .comunidades-container {
+    padding: 1.25rem 0 5.5rem;
+    gap: 1.5rem;
+  }
+
+  .comunidades-grid,
+  .plans-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cat-plans-header {
+    align-items: flex-start;
+    gap: 0.75rem;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .comunidad-body {
+    padding: 0.9rem;
+  }
+
+  .comunidad-img {
+    height: 110px;
+  }
+
+  .comunidad-emoji {
+    font-size: 3rem;
+  }
 }
 </style>

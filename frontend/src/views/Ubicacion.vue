@@ -211,4 +211,34 @@ onMounted(() => {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+@media (max-width: 768px) {
+  .zona-config {
+    padding: 16px;
+    align-items: stretch;
+  }
+
+  .modulo-postal {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .render-mapa {
+    height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .zona-config {
+    padding: 12px;
+  }
+
+  .modulo-postal {
+    padding: 14px;
+  }
+
+  .render-mapa {
+    height: 250px;
+  }
+}
 </style>

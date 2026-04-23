@@ -82,7 +82,16 @@
 
           <!-- Ubicación -->
           <div class="form-group">
-            <label class="form-label">Ubicación (Lat, Lng) *</label>
+            <label class="form-label">Ubicación del plan *</label>
+            <div class="location-summary" :class="{ 'location-summary-empty': !selectedAddress }">
+              <p class="location-summary-title">
+                {{ selectedAddress || "Haz clic en el mapa para elegir dónde será el plan" }}
+              </p>
+              <p v-if="form.lat && form.lng" class="location-summary-coords">
+                Lat {{ Number(form.lat).toFixed(5) }} · Lng {{ Number(form.lng).toFixed(5) }}
+              </p>
+            </div>
+            <div id="plan-location-map" class="plan-location-map"></div>
             <div class="location-row">
               <input
                 class="form-input"
@@ -91,6 +100,7 @@
                 step="any"
                 placeholder="Latitud"
                 required
+                readonly
               />
               <input
                 class="form-input"
@@ -99,6 +109,7 @@
                 step="any"
                 placeholder="Longitud"
                 required
+                readonly
               />
               <button
                 type="button"
@@ -174,22 +185,30 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import NavBar from "../components/NavBar.vue";
 import SideDrawer from "../components/SideDrawer.vue";
 import { usePlanesStore } from "../stores/planesStore";
+import { useAuthStore } from "../stores/authStore";
 import { useRouter } from "vue-router";
 import axios from "axios";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 const drawerOpen = ref(false);
 const router = useRouter();
 const planesStore = usePlanesStore();
+const authStore = useAuthStore();
 const fileInput = ref(null);
 const previews = ref([]);
 const files = ref([]);
 const submitting = ref(false);
 const error = ref("");
 const intereses = ref([]);
+const selectedAddress = ref("");
+
+let map = null;
+let marker = null;
 
 const form = ref({
   titulo: "",
@@ -205,9 +224,21 @@ const API = "http://localhost:3000/api";
 
 onMounted(async () => {
   try {
-    const { data } = await axios.get(`${API}/intereses`);
+    const [{ data }, perfil] = await Promise.all([
+      axios.get(`${API}/intereses`),
+      loadUserProfileLocation(),
+    ]);
     intereses.value = data;
+    await nextTick();
+    initializeMap(perfil);
   } catch (e) {}
+});
+
+onBeforeUnmount(() => {
+  if (map) {
+    map.remove();
+    map = null;
+  }
 });
 
 const groupedIntereses = computed(() => {
@@ -241,8 +272,7 @@ function removeFile(i) {
 function useMyLocation() {
   if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition((pos) => {
-    form.value.lat = pos.coords.latitude;
-    form.value.lng = pos.coords.longitude;
+    updateSelectedLocation(pos.coords.latitude, pos.coords.longitude, true);
   });
 }
 
@@ -263,6 +293,65 @@ async function crearPlan() {
       "Error al crear el plan. Revisa los campos.";
   }
   submitting.value = false;
+}
+
+async function loadUserProfileLocation() {
+  try {
+    return await authStore.fetchPerfil();
+  } catch (e) {
+    return null;
+  }
+}
+
+function initializeMap(perfil) {
+  const defaultLat = Number(perfil?.lat) || 40.4168;
+  const defaultLng = Number(perfil?.lng) || -3.7038;
+
+  map = L.map("plan-location-map").setView([defaultLat, defaultLng], 13);
+
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap",
+  }).addTo(map);
+
+  marker = L.marker([defaultLat, defaultLng]).addTo(map);
+
+  if (perfil?.lat && perfil?.lng) {
+    updateSelectedLocation(defaultLat, defaultLng, false);
+  }
+
+  map.on("click", async (e) => {
+    await updateSelectedLocation(e.latlng.lat, e.latlng.lng, false);
+  });
+
+  setTimeout(() => map?.invalidateSize(), 200);
+}
+
+async function updateSelectedLocation(lat, lng, moveMap = false) {
+  form.value.lat = Number(lat).toFixed(8);
+  form.value.lng = Number(lng).toFixed(8);
+
+  if (marker) {
+    marker.setLatLng([lat, lng]).bindPopup("Ubicación del plan").openPopup();
+  }
+
+  if (moveMap && map) {
+    map.setView([lat, lng], 14);
+  }
+
+  selectedAddress.value = await reverseGeocode(lat, lng);
+}
+
+async function reverseGeocode(lat, lng) {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
+    );
+    const data = await response.json();
+    return data.address?.road || data.display_name || "Ubicación seleccionada";
+  } catch (e) {
+    return "Ubicación seleccionada";
+  }
 }
 </script>
 
@@ -294,6 +383,33 @@ async function crearPlan() {
 .location-row .form-input {
   flex: 1;
   min-width: 120px;
+}
+.location-summary {
+  margin-bottom: 0.9rem;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.12);
+}
+.location-summary-empty {
+  background: #fff7f8;
+}
+.location-summary-title {
+  font-weight: 700;
+  color: var(--text);
+}
+.location-summary-coords {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.plan-location-map {
+  height: 280px;
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  margin-bottom: 0.9rem;
+  overflow: hidden;
 }
 
 .fotos-upload-area {
@@ -375,5 +491,46 @@ async function crearPlan() {
 }
 .form-error {
   color: var(--primary);
+}
+
+@media (max-width: 768px) {
+  .crear-container {
+    padding: 1.25rem 0 5.5rem;
+    gap: 1.25rem;
+  }
+
+  .crear-form {
+    padding: 1.25rem;
+    gap: 1.25rem;
+  }
+
+  .form-actions {
+    justify-content: stretch;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .location-row {
+    flex-direction: column;
+  }
+
+  .location-row .form-input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .plan-location-map {
+    height: 240px;
+  }
+
+  .foto-preview-wrap,
+  .foto-add-more {
+    width: 78px;
+    height: 78px;
+  }
 }
 </style>

@@ -4,7 +4,14 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 export async function listarPlanes(req, res, next) {
   try {
-    const planes = await getPlanes({ excludeUserId: req.id });
+    const orientacion = req.query.orientacion;
+    const hostOrientation =
+      orientacion && orientacion !== 'all' ? orientacion : null;
+
+    const planes = await getPlanes({
+      excludeUserId: req.id,
+      hostOrientation,
+    });
     const planesConFoto = planes.map(p => ({
       ...p,
       foto: p.foto ? `${BASE_URL}/uploads/${p.foto.split('/').pop()}` : null,

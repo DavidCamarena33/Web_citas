@@ -13,7 +13,8 @@ export async function getSolicitudesPlan(id_plan) {
     `SELECT s.*, u.nombre AS solicitante_nombre
      FROM solicitudes s
      JOIN usuarios u ON u.id = s.id_solicitante
-     WHERE s.id_plan = ? ORDER BY s.fecha_creacion DESC`,
+     WHERE s.id_plan = ? AND s.estado = 'pendiente'
+     ORDER BY s.fecha_creacion DESC`,
     [id_plan]
   );
   return rows;
@@ -42,7 +43,7 @@ export async function getMisSolicitudes(id_usuario) {
 
 export async function getCupoPlan(id_plan) {
   const [[plan]] = await connection.query(
-    `SELECT p.max_asistentes,
+    `SELECT p.max_asistentes, p.id_usuario,
             (SELECT COUNT(*) FROM solicitudes s WHERE s.id_plan = p.id AND s.estado = 'aceptada') AS aceptadas
      FROM planes p
      WHERE p.id = ?`,

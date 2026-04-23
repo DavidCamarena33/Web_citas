@@ -10,10 +10,13 @@ export const usePlanesStore = defineStore('planes', {
     loading: false,
   }),
   actions: {
-    async fetchPlanes() {
+    async fetchPlanes(orientacion = 'all') {
       this.loading = true;
       try {
-        const { data } = await axios.get(`${API}/planes`, { withCredentials: true });
+        const { data } = await axios.get(`${API}/planes`, {
+          withCredentials: true,
+          params: orientacion && orientacion !== 'all' ? { orientacion } : {},
+        });
         this.planes = data;
       } finally {
         this.loading = false;

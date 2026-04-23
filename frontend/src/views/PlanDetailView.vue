@@ -28,6 +28,10 @@
               <span class="meta-icon">🗓️</span>
               <span class="meta-text">{{ formatDate(plan.fecha_plan) }}</span>
             </div>
+            <div class="meta-item" v-if="distanceLabel">
+              <span class="meta-icon">📏</span>
+              <span class="meta-text">{{ distanceLabel }}</span>
+            </div>
           </div>
         </div>
 
@@ -38,6 +42,67 @@
             <span class="host-label">Organizado por</span>
             <span class="host-name">{{ plan.host_nombre }}</span>
           </div>
+        </div>
+
+        <div v-if="isOwnPlan" class="requests-section card">
+          <div class="requests-header">
+            <div>
+              <h3>Solicitudes</h3>
+              <p class="requests-subtitle">Gestiona quién puede unirse a tu plan</p>
+            </div>
+            <span class="requests-count">{{ solicitudes.length }}</span>
+          </div>
+
+          <div v-if="loadingSolicitudes" class="loading-center">
+            <div class="spinner"></div>
+          </div>
+
+          <div v-else-if="solicitudes.length === 0" class="empty-state compact-empty">
+            <span class="empty-icon">📭</span>
+            <p>Todavía no tienes solicitudes para este plan.</p>
+          </div>
+
+          <div v-else class="requests-list">
+            <div v-for="solicitud in solicitudes" :key="solicitud.id" class="request-item">
+              <div class="request-main">
+                <div class="request-avatar">
+                  {{ (solicitud.solicitante_nombre || "?")[0]?.toUpperCase() }}
+                </div>
+                <div class="request-info">
+                  <p class="request-name">{{ solicitud.solicitante_nombre || "Usuario" }}</p>
+                  <p class="request-meta">
+                    Estado: {{ solicitud.estado }} · {{ formatRequestDate(solicitud.fecha_creacion) }}
+                  </p>
+                  <p v-if="solicitud.mensaje" class="request-message">{{ solicitud.mensaje }}</p>
+                </div>
+              </div>
+
+              <div class="request-actions">
+                <button
+                  class="btn btn-ghost btn-sm"
+                  @click="updateSolicitud(solicitud.id, 'rechazada')"
+                  :disabled="processingSolicitudId === solicitud.id || solicitud.estado === 'rechazada'"
+                >
+                  Rechazar
+                </button>
+                <button
+                  class="btn btn-primary btn-sm"
+                  @click="updateSolicitud(solicitud.id, 'aceptada')"
+                  :disabled="processingSolicitudId === solicitud.id || solicitud.estado === 'aceptada'"
+                >
+                  {{ processingSolicitudId === solicitud.id ? 'Guardando...' : 'Aceptar' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="hasPlanLocation" class="location-map-section card">
+          <div class="section-head">
+            <h3>Donde es el plan</h3>
+            <p class="text-muted">Ubicacion aproximada del encuentro</p>
+          </div>
+          <div id="plan-detail-map" class="plan-detail-map"></div>
         </div>
 
         <!-- Description -->
@@ -53,8 +118,8 @@
           <span class="spots-count">{{ spotsLeft }}</span>
           <span class="spots-label">plazas libres</span>
         </div>
-        <button class="btn btn-primary join-btn" @click="handleJoin" :disabled="joining">
-          {{ joining ? 'Uniendo...' : 'Unirme al plan' }}
+        <button class="btn btn-primary join-btn" :class="{ 'join-btn-disabled': isJoinDisabled }" @click="handleJoin" :disabled="joining || isJoinDisabled">
+          {{ joinButtonLabel }}
         </button>
       </div>
     </main>
@@ -71,36 +136,98 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import NavBar from "../components/NavBar.vue";
 import SideDrawer from "../components/SideDrawer.vue";
 import { usePlanesStore } from "../stores/planesStore";
+import { useAuthStore } from "../stores/authStore";
+import { calculateDistanceKm, formatDistanceKm } from "../utils/location";
 
 const route = useRoute();
 const router = useRouter();
 const store = usePlanesStore();
+const authStore = useAuthStore();
 
 const drawerOpen = ref(false);
 const plan = ref(null);
 const loading = ref(true);
 const joining = ref(false);
 const toast = ref("");
+const solicitudes = ref([]);
+const loadingSolicitudes = ref(false);
+const processingSolicitudId = ref(null);
+const userCoords = ref(null);
+let map = null;
+let marker = null;
 
 onMounted(async () => {
   try {
-    const { data } = await axios.get(`http://localhost:3000/api/planes/${route.params.id}`);
-    plan.value = data;
+    if (!authStore.user && !authStore.isAuthenticated) {
+      await authStore.checkAuth();
+    }
+
+    await Promise.all([loadPlan(), store.fetchMisPlanes(), loadUserCoords()]);
+    if (isOwnPlan.value) {
+      await loadSolicitudes();
+    }
   } catch (err) {
     console.error(err);
     showToast("Error al cargar el plan");
   } finally {
     loading.value = false;
+    await nextTick();
+    initializeMap();
+  }
+});
+
+onBeforeUnmount(() => {
+  if (map) {
+    map.remove();
+    map = null;
+    marker = null;
   }
 });
 
 const hostInitial = computed(() => (plan.value?.host_nombre || "?")[0].toUpperCase());
+const hasPlanLocation = computed(() => Boolean(plan.value?.lat && plan.value?.lng));
+const isOwnPlan = computed(() => {
+  const currentUserId = Number(authStore.user?.id);
+  const hostId = Number(plan.value?.host_id ?? plan.value?.id_usuario);
+
+  if (!currentUserId || !hostId) return false;
+  return currentUserId === hostId;
+});
+const currentJoinStatus = computed(() => {
+  if (!plan.value?.id) return "";
+  const existing = store.misPlanes.find((item) => item.id === plan.value.id);
+  if (!existing || existing.tipo === "hosting") return "";
+  return existing.tipo;
+});
+const isJoinDisabled = computed(() => {
+  return (
+    isOwnPlan.value ||
+    currentJoinStatus.value === "pendiente" ||
+    currentJoinStatus.value === "aceptada"
+  );
+});
+const joinButtonLabel = computed(() => {
+  if (isOwnPlan.value) return "Es tu plan";
+  if (currentJoinStatus.value === "aceptada") return "Ya unido";
+  if (currentJoinStatus.value === "pendiente") return "Solicitud enviada";
+  return joining.value ? "Uniendo..." : "Unirme al plan";
+});
+const distanceLabel = computed(() =>
+  formatDistanceKm(
+    calculateDistanceKm(userCoords.value, {
+      lat: plan.value?.lat,
+      lng: plan.value?.lng,
+    })
+  )
+);
 const spotsLeft = computed(() => {
   const maxAsistentes = Number(plan.value?.max_asistentes || 8);
   const ocupadas = Number(plan.value?.spots_filled || 0);
@@ -108,9 +235,21 @@ const spotsLeft = computed(() => {
 });
 
 async function handleJoin() {
+  if (isJoinDisabled.value) {
+    if (isOwnPlan.value) {
+      showToast("⚠️ No puedes unirte a un plan creado por ti");
+    } else if (currentJoinStatus.value === "pendiente") {
+      showToast("⚠️ Ya has enviado una solicitud para este plan");
+    } else if (currentJoinStatus.value === "aceptada") {
+      showToast("⚠️ Ya formas parte de este plan");
+    }
+    return;
+  }
+
   joining.value = true;
   try {
     await store.quickJoin(plan.value.id);
+    await store.fetchMisPlanes();
     showToast("✅ ¡Solicitud enviada!");
     setTimeout(() => {
       router.push('/mis-planes');
@@ -123,6 +262,80 @@ async function handleJoin() {
   }
 }
 
+async function loadPlan() {
+  const { data } = await axios.get(`http://localhost:3000/api/planes/${route.params.id}`, {
+    withCredentials: true,
+  });
+  plan.value = data;
+}
+
+function initializeMap() {
+  if (!hasPlanLocation.value || map) return;
+
+  const lat = Number(plan.value.lat);
+  const lng = Number(plan.value.lng);
+
+  map = L.map("plan-detail-map", {
+    zoomControl: true,
+    dragging: true,
+    scrollWheelZoom: false,
+  }).setView([lat, lng], 14);
+
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap",
+  }).addTo(map);
+
+  marker = L.marker([lat, lng]).addTo(map);
+  marker.bindPopup(plan.value.direccion || plan.value.titulo || "Ubicación del plan");
+
+  setTimeout(() => {
+    map?.invalidateSize();
+  }, 200);
+}
+
+async function loadSolicitudes() {
+  loadingSolicitudes.value = true;
+  try {
+    const { data } = await axios.get(`http://localhost:3000/api/solicitudes/plan/${route.params.id}`, {
+      withCredentials: true,
+    });
+    solicitudes.value = data;
+  } finally {
+    loadingSolicitudes.value = false;
+  }
+}
+
+async function loadUserCoords() {
+  try {
+    const perfil = await authStore.fetchPerfil();
+    if (perfil?.lat && perfil?.lng) {
+      userCoords.value = {
+        lat: Number(perfil.lat),
+        lng: Number(perfil.lng),
+      };
+    }
+  } catch (e) {}
+}
+
+async function updateSolicitud(id, estado) {
+  processingSolicitudId.value = id;
+  try {
+    const { data } = await axios.put(
+      `http://localhost:3000/api/solicitudes/${id}`,
+      { estado },
+      { withCredentials: true }
+    );
+    showToast(`✅ ${data.message}`);
+    await Promise.all([loadPlan(), loadSolicitudes()]);
+  } catch (e) {
+    const msg = e?.response?.data?.message || "Error al actualizar la solicitud";
+    showToast("⚠️ " + msg);
+  } finally {
+    processingSolicitudId.value = null;
+  }
+}
+
 function showToast(msg) {
   toast.value = msg;
   setTimeout(() => (toast.value = ""), 3000);
@@ -132,6 +345,16 @@ function formatDate(d) {
   if (!d) return "";
   return new Date(d).toLocaleDateString("es-ES", {
     weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit"
+  });
+}
+
+function formatRequestDate(d) {
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 </script>
@@ -251,6 +474,101 @@ function formatDate(d) {
 .description-section {
   padding: 1rem 0 2rem;
 }
+.location-map-section {
+  padding: 1.5rem;
+}
+.section-head {
+  margin-bottom: 1rem;
+}
+.plan-detail-map {
+  width: 100%;
+  height: 280px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+}
+.requests-section {
+  padding: 1.5rem;
+}
+.requests-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.requests-subtitle {
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+}
+.requests-count {
+  min-width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: rgba(244, 63, 94, 0.1);
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+.requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.request-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--card-border);
+}
+.request-item:first-child {
+  border-top: none;
+  padding-top: 0.25rem;
+}
+.request-main {
+  display: flex;
+  gap: 0.875rem;
+  flex: 1;
+}
+.request-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+.request-info {
+  flex: 1;
+}
+.request-name {
+  font-weight: 700;
+  color: var(--text);
+}
+.request-meta {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.request-message {
+  margin-top: 0.5rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+.request-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.compact-empty {
+  padding: 1rem 0 0;
+}
 .description-section h3 {
   margin-bottom: 1rem;
 }
@@ -289,6 +607,89 @@ function formatDate(d) {
 .join-btn {
   padding: 0.8rem 2rem;
   font-size: 1.1rem;
+}
+.join-btn-disabled,
+.join-btn-disabled:hover {
+  background: #e2e8f0 !important;
+  color: #64748b !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .detail-header {
+    height: 38vh;
+  }
+
+  .detail-content {
+    margin-top: -36px;
+    gap: 1rem;
+  }
+
+  .main-info-card,
+  .host-section,
+  .location-map-section,
+  .requests-section {
+    padding: 1.1rem;
+  }
+
+  .detail-title {
+    font-size: 1.45rem;
+  }
+
+  .request-item {
+    flex-direction: column;
+  }
+
+  .request-actions {
+    justify-content: flex-end;
+  }
+
+  .bottom-action-bar {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .join-btn {
+    padding: 0.8rem 1.2rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .detail-header {
+    height: 32vh;
+  }
+
+  .plan-detail-map {
+    height: 220px;
+  }
+
+  .detail-overlay {
+    padding: 1rem;
+    padding-top: calc(1rem + 72px);
+  }
+
+  .host-section {
+    align-items: flex-start;
+  }
+
+  .bottom-action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .spots-info {
+    text-align: center;
+  }
+
+  .request-actions {
+    flex-direction: column;
+  }
+
+  .request-actions .btn {
+    width: 100%;
+  }
 }
 
 .full-height {

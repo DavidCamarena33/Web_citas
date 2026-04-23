@@ -9,23 +9,40 @@
       </div>
 
       <!-- Filters Section -->
-      <div class="mb-8 filter-chips-wrap fade-in-up">
-        <button
-          class="filter-chip"
-          :class="selectedCategoria === 'all' ? 'active-chip' : 'outline-chip'"
-          @click="selectedCategoria = 'all'"
-        >
-          <span class="material-symbols-outlined text-lg">grid_view</span> Todas
-        </button>
-        <button
-          class="filter-chip"
-          :class="selectedCategoria === cat ? 'active-chip' : 'outline-chip'"
-          v-for="cat in categorias"
-          :key="cat"
-          @click="filtrar(cat)"
-        >
-          {{ cat }}
-        </button>
+      <div class="discover-filters fade-in-up">
+        <div class="category-filter">
+          <label class="filter-label" for="category-filter">Tipo de plan</label>
+          <div class="select-wrap">
+            <select
+              id="category-filter"
+              v-model="selectedCategoria"
+              class="filter-select"
+            >
+              <option value="all">Todas</option>
+              <option v-for="cat in categorias" :key="cat" :value="cat">
+                {{ cat }}
+              </option>
+            </select>
+            <span class="select-icon material-symbols-outlined">expand_more</span>
+          </div>
+        </div>
+
+        <div class="orientation-filter">
+          <label class="filter-label" for="orientation-filter">Orientacion</label>
+          <div class="select-wrap">
+            <select
+              id="orientation-filter"
+              v-model="selectedOrientacion"
+              class="filter-select"
+            >
+              <option value="all">Todas</option>
+              <option value="hetero">Heterosexual</option>
+              <option value="bi">Bisexual</option>
+              <option value="homosexual">Homosexual</option>
+            </select>
+            <span class="select-icon material-symbols-outlined">expand_more</span>
+          </div>
+        </div>
       </div>
 
       <!-- Grid Feed -->
@@ -42,6 +59,7 @@
             v-for="plan in filteredPlanes"
             :key="plan.id"
             :plan="plan"
+            :join-status="plan.joinStatus"
             @click="openPlan"
             @join="handleJoin"
           />
@@ -70,23 +88,52 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import NavBar from "../components/NavBar.vue";
 import SideDrawer from "../components/SideDrawer.vue";
 import PlanCard from "../components/PlanCard.vue";
 import { usePlanesStore } from "../stores/planesStore";
+import { useAuthStore } from "../stores/authStore";
 import { useRouter } from "vue-router";
+import { calculateDistanceKm, formatDistanceKm } from "../utils/location";
 
 const store = usePlanesStore();
+const authStore = useAuthStore();
 const router = useRouter();
 const drawerOpen = ref(false);
 const toast = ref("");
 const selectedCategoria = ref("all");
+const selectedOrientacion = ref("all");
+const userCoords = ref(null);
 
-const planes = computed(() => store.planes);
+const joinStatusByPlanId = computed(() => {
+  const map = new Map();
+  store.misPlanes.forEach((plan) => {
+    if (plan.tipo === "hosting") return;
+    map.set(plan.id, plan.tipo);
+  });
+  return map;
+});
+
+const planes = computed(() =>
+  store.planes.map((plan) => ({
+    ...plan,
+    joinStatus: joinStatusByPlanId.value.get(plan.id) || "",
+    distanceLabel: formatDistanceKm(
+      calculateDistanceKm(userCoords.value, { lat: plan.lat, lng: plan.lng })
+    ),
+  }))
+);
 const filteredPlanes = computed(() => {
-  if (selectedCategoria.value === "all") return planes.value;
-  return planes.value.filter((plan) => plan.categoria === selectedCategoria.value);
+  return planes.value.filter((plan) => {
+    const matchesCategoria =
+      selectedCategoria.value === "all" || plan.categoria === selectedCategoria.value;
+    const matchesOrientacion =
+      selectedOrientacion.value === "all" ||
+      plan.host_orientacion === selectedOrientacion.value;
+
+    return matchesCategoria && matchesOrientacion;
+  });
 });
 
 const categorias = computed(() => {
@@ -98,12 +145,21 @@ const categorias = computed(() => {
   return Array.from(uniques);
 });
 
-onMounted(() => store.fetchPlanes());
+onMounted(async () => {
+  await Promise.all([
+    store.fetchPlanes(selectedOrientacion.value),
+    store.fetchMisPlanes(),
+    loadUserCoords(),
+  ]);
+});
+
+watch(selectedOrientacion, async (value) => {
+  await store.fetchPlanes(value);
+});
 
 function filtrar(categoria) {
   selectedCategoria.value = categoria;
 }
-
 function openPlan(plan) {
   router.push(`/planes/${plan.id}`);
 }
@@ -111,6 +167,7 @@ function openPlan(plan) {
 async function handleJoin(plan) {
   try {
     await store.quickJoin(plan.id);
+    await store.fetchMisPlanes();
     showToast("✅ ¡Solicitud enviada!");
   } catch (e) {
     const msg = e?.response?.data?.message || "Error al solicitar";
@@ -121,6 +178,18 @@ async function handleJoin(plan) {
 function showToast(msg) {
   toast.value = msg;
   setTimeout(() => (toast.value = ""), 3000);
+}
+
+async function loadUserCoords() {
+  try {
+    const perfil = await authStore.fetchPerfil();
+    if (perfil?.lat && perfil?.lng) {
+      userCoords.value = {
+        lat: Number(perfil.lat),
+        lng: Number(perfil.lng),
+      };
+    }
+  } catch (e) {}
 }
 </script>
 
@@ -155,20 +224,86 @@ function showToast(msg) {
 }
 
 /* Filters Section (Chips) */
-.filter-chips-wrap {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-bottom: 2rem;
+.discover-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
-.filter-chip {
-  display: flex; align-items: center; gap: 0.5rem; border-radius: 9999px; padding: 0.5rem 1.25rem; font-size: 0.875rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
-  border: 2px solid transparent;
+.category-filter,
+.orientation-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 220px;
 }
-.active-chip {
-  border-color: var(--primary); background: rgba(244, 63, 94, 0.1); color: var(--primary); box-shadow: 0 1px 2px 0 rgba(244, 63, 94, 0.1);
+
+.filter-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
-.outline-chip {
-  border-color: #e2e8f0; background: #fff; color: #475569;
+
+.select-wrap {
+  position: relative;
+  min-width: 220px;
 }
-.outline-chip:hover { border-color: rgba(244, 63, 94, 0.3); }
+
+.filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 100%;
+  border: 1px solid rgba(244, 63, 94, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 244, 246, 0.98) 100%);
+  color: #0f172a;
+  border-radius: 1rem;
+  padding: 0.95rem 3.2rem 0.95rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  box-shadow:
+    0 12px 30px rgba(15, 23, 42, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+
+.filter-select:hover {
+  border-color: rgba(244, 63, 94, 0.38);
+  box-shadow:
+    0 14px 34px rgba(244, 63, 94, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: rgba(244, 63, 94, 0.5);
+  box-shadow:
+    0 0 0 4px rgba(244, 63, 94, 0.12),
+    0 12px 30px rgba(244, 63, 94, 0.09);
+}
+
+.select-icon {
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: rgba(244, 63, 94, 0.12);
+  color: var(--primary);
+  pointer-events: none;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .tune-btn {
   margin-left: auto; display: flex; width: 2.5rem; height: 2.5rem; align-items: center; justify-content: center; border-radius: 50%; background: #fff; color: #475569; box-shadow: var(--shadow-sm); border: 1px solid #f1f5f9; cursor: pointer;
@@ -201,6 +336,31 @@ function showToast(msg) {
 }
 .btn-load-more:hover {
   background: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 768px) {
+  .discover-filters {
+    align-items: stretch;
+  }
+
+  .category-filter,
+  .orientation-filter {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .page-content.py-8 {
+    padding-top: calc(76px + 1.25rem);
+    padding-bottom: 5.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .px-6,
+  .lg-px-20 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 }
 
 .fab {

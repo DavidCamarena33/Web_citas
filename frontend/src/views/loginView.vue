@@ -229,4 +229,46 @@ async function Login() {
   left: -80px;
   background: rgba(233, 30, 99, 0.06);
 }
+
+@media (max-width: 768px) {
+  .auth-page {
+    padding: 1.25rem;
+  }
+
+  .auth-card {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-page {
+    padding: 1rem;
+  }
+
+  .auth-card {
+    padding: 1.25rem;
+    border-radius: 1rem;
+  }
+
+  .auth-title {
+    font-size: 1.4rem;
+  }
+
+  .c1 {
+    width: 240px;
+    height: 240px;
+    top: -90px;
+    right: -90px;
+  }
+
+  .c2 {
+    width: 160px;
+    height: 160px;
+  }
+
+  .c3 {
+    width: 100px;
+    height: 100px;
+  }
+}
 </style>

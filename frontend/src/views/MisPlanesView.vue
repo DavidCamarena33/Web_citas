@@ -395,4 +395,40 @@ function formatDate(d) {
   border: none; cursor: not-allowed;
 }
 
+@media (max-width: 768px) {
+  .page-content.py-8 {
+    padding-top: calc(76px + 1.25rem);
+    padding-bottom: 5rem;
+  }
+
+  .px-6 { padding-left: 1rem; padding-right: 1rem; }
+
+  .stat-box {
+    padding: 1.1rem;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .h-meta-top {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .tabs-row {
+    gap: 1rem;
+  }
+
+  .horizontal-plan-card {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .h-img-wrap {
+    height: 160px;
+  }
+}
+
 </style>

@@ -411,4 +411,60 @@ async function saveBio() {
   color: #fff;
   border-style: solid;
 }
+
+@media (max-width: 768px) {
+  .perfil-container {
+    padding: 1.25rem 0 5.5rem;
+  }
+
+  .perfil-info {
+    padding: 0 1.1rem 1.1rem;
+  }
+
+  .perfil-name {
+    font-size: 1.35rem;
+  }
+
+  .perfil-stats {
+    gap: 1rem;
+    justify-content: space-between;
+  }
+
+  .stat-block {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .perfil-cover {
+    height: 100px;
+  }
+
+  .perfil-avatar-wrap {
+    margin-top: -42px;
+  }
+
+  .perfil-bio-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .perfil-stats {
+    gap: 0.75rem;
+  }
+
+  .stat-divider {
+    display: none;
+  }
+
+  .photo-upload-label,
+  .photo-upload-label span {
+    width: 100%;
+  }
+
+  .photo-upload-label span {
+    text-align: center;
+  }
+}
 </style>

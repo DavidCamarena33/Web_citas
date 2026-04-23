@@ -67,7 +67,7 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/authStore";
 
@@ -85,6 +85,12 @@ const initials = computed(() => {
     .join("")
     .toUpperCase()
     .slice(0, 2);
+});
+
+onMounted(async () => {
+  if (!auth.user && !auth.isAuthenticated) {
+    await auth.checkAuth();
+  }
 });
 
 async function cerrarSesion() {

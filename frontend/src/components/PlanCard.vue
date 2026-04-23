@@ -29,9 +29,18 @@
       </div>
 
       <p class="pc-location">{{ locationLabel }}</p>
+      <p v-if="distanceLabel" class="pc-distance">
+        <span class="material-symbols-outlined" style="font-size: 0.9rem">near_me</span>
+        {{ distanceLabel }}
+      </p>
 
-      <button class="pc-btn" @click.stop="$emit('join', plan)">
-        Unirme al plan
+      <button
+        class="pc-btn"
+        :class="{ 'pc-btn-disabled': isActionDisabled }"
+        @click.stop="$emit('join', plan)"
+        :disabled="isActionDisabled"
+      >
+        {{ buttonLabel }}
       </button>
     </div>
   </div>
@@ -39,14 +48,36 @@
 
 <script setup>
 import { computed } from "vue";
+import { useAuthStore } from "../stores/authStore";
 
 const props = defineProps({
   plan: { type: Object, required: true },
   maxSpots: { type: Number, default: 8 },
+  joinStatus: { type: String, default: "" },
 });
 defineEmits(["click", "join"]);
 
+const authStore = useAuthStore();
+
 const hostName = computed(() => props.plan.host_nombre || "Usuario");
+const isOwnPlan = computed(() => {
+  const currentUserId = Number(authStore.user?.id);
+  const hostId = Number(props.plan.host_id ?? props.plan.id_usuario);
+
+  if (!currentUserId || !hostId) return false;
+  return currentUserId === hostId;
+});
+const isPending = computed(() => props.joinStatus === "pendiente");
+const isAccepted = computed(() => props.joinStatus === "aceptada");
+const isActionDisabled = computed(
+  () => isOwnPlan.value || isPending.value || isAccepted.value
+);
+const buttonLabel = computed(() => {
+  if (isOwnPlan.value) return "Es tu plan";
+  if (isAccepted.value) return "Ya unido";
+  if (isPending.value) return "Solicitud enviada";
+  return "Unirme al plan";
+});
 
 const excerpt = computed(() => {
   const d = props.plan.descripcion || "";
@@ -59,6 +90,7 @@ const spotsLeft = computed(() => {
 });
 
 const locationLabel = computed(() => props.plan.direccion || "Por determinar");
+const distanceLabel = computed(() => props.plan.distanceLabel || "");
 
 const badgeClass = computed(() => {
   const cat = (props.plan.categoria || "").toLowerCase();
@@ -174,6 +206,16 @@ function formatDate(d) {
   color: #64748b; /* slate-500 */
 }
 
+.pc-distance {
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #2563eb;
+}
+
 .pc-btn {
   margin-top: auto;
   padding-top: 1rem;
@@ -190,5 +232,12 @@ function formatDate(d) {
 }
 .pc-btn:hover {
   background: rgba(244, 63, 94, 0.2);
+}
+
+.pc-btn-disabled,
+.pc-btn-disabled:hover {
+  background: #e2e8f0;
+  color: #64748b;
+  cursor: not-allowed;
 }
 </style>
