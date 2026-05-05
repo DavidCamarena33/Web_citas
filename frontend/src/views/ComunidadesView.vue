@@ -135,7 +135,7 @@ onMounted(async () => {
   try {
     const [intRes] = await Promise.all([
       axios.get(`${API}/intereses`),
-      planesStore.fetchPlanes(),
+      planesStore.fetchPlanes({ modalidad: "grupo" }),
       planesStore.fetchMisPlanes(),
       loadUserCoords(),
     ]);

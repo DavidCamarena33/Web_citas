@@ -14,8 +14,19 @@
             <p class="text-muted mt-2">Gestiona tus planes y sigue tus actividades próximas.</p>
           </div>
           <div class="flex gap-3">
-            <button class="btn btn-ghost history-btn" @click="tab = 'past'">
+            <button
+              class="btn btn-ghost history-btn"
+              :class="{ 'toolbar-btn-active': tab === 'past' }"
+              @click="tab = 'past'"
+            >
               <span class="material-symbols-outlined">history</span> Historial
+            </button>
+            <button
+              class="btn btn-ghost history-btn"
+              :class="{ 'toolbar-btn-active': tab === 'favorites' }"
+              @click="tab = 'favorites'"
+            >
+              <span class="material-symbols-outlined">favorite</span> Favoritos
             </button>
             <button class="btn btn-primary shadow-primary" @click="$router.push('/crear-plan')">
               <span class="material-symbols-outlined">add_circle</span> Crear plan
@@ -130,6 +141,9 @@
                   <button v-if="plan.tipo === 'hosting'" class="btn-manage" @click.stop="$router.push(`/planes/${plan.id}`)">
                     Gestionar solicitudes
                   </button>
+                  <button v-else-if="plan.tipo === 'favorito'" class="btn-chat" @click.stop="$router.push(`/planes/${plan.id}`)">
+                    <span class="material-symbols-outlined text-lg">favorite</span> Ver plan
+                  </button>
                   <button v-else-if="plan.tipo === 'aceptada'" class="btn-chat" @click.stop="$router.push('/mensajes')">
                     <span class="material-symbols-outlined text-lg">chat</span> Chat
                   </button>
@@ -162,16 +176,38 @@ const loading = ref(false);
 
 onMounted(async () => {
   loading.value = true;
-  await store.fetchMisPlanes();
+  await Promise.all([
+    store.fetchMisPlanes(),
+    store.fetchFavoritos(),
+    store.fetchPlanes(),
+  ]);
   loading.value = false;
 });
 
-const allPlanes = computed(() => store.misPlanes);
+const favoritePlanIds = computed(
+  () => new Set(store.favoritePlanIds.map((id) => Number(id)))
+);
+
+const favoritePlans = computed(() =>
+  store.planes
+    .filter((plan) => favoritePlanIds.value.has(Number(plan.id)))
+    .map((plan) => ({
+      ...plan,
+      tipo: "favorito",
+    }))
+);
+
+const userPlans = computed(() => store.misPlanes);
+
+const allPlanes = computed(() =>
+  tab.value === "favorites" ? favoritePlans.value : store.misPlanes
+);
 
 const filteredPlanes = computed(() => {
   const now = new Date();
   return allPlanes.value.filter((p) => {
     const fecha = p.fecha_plan ? new Date(p.fecha_plan) : null;
+    if (tab.value === "favorites") return true;
     if (tab.value === "hosting") return p.tipo === "hosting";
     if (tab.value === "pending") return p.tipo === "pendiente";
     if (tab.value === "past") return fecha && fecha < now;
@@ -180,13 +216,18 @@ const filteredPlanes = computed(() => {
   });
 });
 
-const totalHosting = computed(() => allPlanes.value.filter((p) => p.tipo === "hosting").length);
-const totalJoined = computed(() => allPlanes.value.filter((p) => p.tipo === "aceptada").length);
-const totalPending = computed(() => allPlanes.value.filter((p) => p.tipo === "pendiente").length);
-const totalUpcoming = computed(() => allPlanes.value.filter((p) => p.tipo !== 'pasado').length);
+const totalHosting = computed(() => userPlans.value.filter((p) => p.tipo === "hosting").length);
+const totalPending = computed(() => userPlans.value.filter((p) => p.tipo === "pendiente").length);
+const totalUpcoming = computed(() => {
+  const now = new Date();
+  return userPlans.value.filter((p) => {
+    const fecha = p.fecha_plan ? new Date(p.fecha_plan) : null;
+    return !fecha || fecha >= now;
+  }).length;
+});
 
 function spotsFilled(plan) {
-  return plan.spots_filled || 0;
+  return 1 + Number(plan.spots_filled || 0);
 }
 function maxAsistentes(plan) {
   return plan.max_asistentes || 8;
@@ -199,16 +240,19 @@ function openPlan(plan) {
 function tipoBadgeClass(tipo) {
   if (tipo === "hosting") return "badge-hosting text-purple-700 bg-purple-100";
   if (tipo === "aceptada") return "badge-confirmed text-emerald-700 bg-emerald-100";
+  if (tipo === "favorito") return "badge-favorite text-rose-700 bg-rose-100";
   return "badge-pending text-amber-700 bg-amber-100";
 }
 function tipoLabel(tipo) {
   if (tipo === "hosting") return "Organizas";
   if (tipo === "aceptada") return "Aceptado";
+  if (tipo === "favorito") return "Favorito";
   return "Pendiente";
 }
 function tipoIcon(tipo) {
   if (tipo === 'hosting') return 'star';
   if (tipo === 'aceptada') return 'check_circle';
+  if (tipo === 'favorito') return 'favorite';
   return 'hourglass_empty';
 }
 function formatDate(d) {
@@ -253,6 +297,11 @@ function formatDate(d) {
 .history-btn:hover {
   border-color: rgba(244, 63, 94, 0.3);
   color: var(--primary);
+}
+.toolbar-btn-active {
+  border-color: rgba(244, 63, 94, 0.35);
+  color: var(--primary);
+  background: rgba(244, 63, 94, 0.08);
 }
 
 .misplanes-title {

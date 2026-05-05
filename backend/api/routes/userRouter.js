@@ -1,4 +1,4 @@
-import { login, logout, register, ActualizarUbicacionUser, VerificarSesion, getPerfil, subirFoto, actualizarDescripcion } from "../controllers/userController.js";
+import { login, logout, register, ActualizarUbicacionUser, VerificarSesion, getPerfil, subirFoto, actualizarFotoPrincipal, actualizarDescripcion } from "../controllers/userController.js";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 import { upload } from "../middlewares/uploadMiddleware.js";
 import express from "express";
@@ -14,6 +14,7 @@ router.get('/verificar-sesion', verifyToken, VerificarSesion);
 // Profile
 router.get('/perfil', verifyToken, getPerfil);
 router.post('/perfil/foto', verifyToken, upload.single('foto'), subirFoto);
+router.put('/perfil/foto-principal', verifyToken, upload.single('foto'), actualizarFotoPrincipal);
 router.put('/perfil/descripcion', verifyToken, actualizarDescripcion);
 
 export default router;

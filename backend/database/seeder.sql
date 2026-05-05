@@ -63,7 +63,7 @@ INSERT INTO fotos_usuarios (id_usuario, url, orden) VALUES
 (12, 'https://picsum.photos/seed/nati2/400/500',  1);
 
 -- ======================================
--- PLANES (15 planes de muestra)
+-- PLANES (21 planes de muestra)
 -- IDs de intereses de referencia del init.sql:
 --   1=Senderismo, 2=Running, 3=Ciclismo, 4=Yoga, 5=Futbol
 --   6=Padel, 7=Escalada, 8=Surf, 9=Gym & Fitness, 10=Baile
@@ -149,7 +149,37 @@ INSERT INTO planes (id_usuario, id_interes, titulo, descripcion, max_asistentes,
 -- Plan 15: Karaoke
 (10, 51, 'Karaoke noche en Gracia',
  'Somos 2 y buscamos mas gente animada para karaoke en El Karaoke Bar (Carrer Verdi). Empezamos a las 22h y cerramos el local.',
- 12, 41.40200000,  2.15700000, '2026-04-17 22:00:00');
+ 12, 41.40200000,  2.15700000, '2026-04-17 22:00:00'),
+
+-- Plan 16: Cita hetero cafe
+(1, 13, 'Cafe y paseo por el Retiro',
+ 'Plan tranquilo para conocernos con un cafe de especialidad y paseo sin prisas por el Retiro. Solo una persona mas para que sea una cita de verdad.',
+ 2, 40.41580000, -3.68460000, '2026-05-03 17:30:00'),
+
+-- Plan 17: Cita hetero brunch
+(2, 19, 'Brunch para dos en Chamberi',
+ 'He reservado mesa para dos en una cafeteria bonita de Chamberi. Me apetece una conversacion agradable y descubrir a alguien interesante.',
+ 2, 40.43420000, -3.70350000, '2026-05-04 11:00:00'),
+
+-- Plan 18: Cita bi vinos
+(3, 15, 'Vinos naturales y charla por Lavapies',
+ 'Busco una persona para compartir una cata informal de vinos naturales y alargar luego con una caminata por el barrio.',
+ 2, 40.40890000, -3.69970000, '2026-05-05 20:00:00'),
+
+-- Plan 19: Cita bi atardecer
+(8, 45, 'Atardecer y paseo por la playa de Cadiz',
+ 'Me apetece conocer a alguien con energia bonita para ver el atardecer, caminar por la orilla y tomar algo despues.',
+ 2, 36.52980000, -6.29510000, '2026-05-10 19:45:00'),
+
+-- Plan 20: Cita homosexual museo
+(4, 26, 'Museo y cafe en Barcelona para dos',
+ 'Plan de tarde para visitar una expo, comentar lo que vemos y terminar con un cafe. Solo una plaza para mantenerlo en formato cita.',
+ 2, 41.38740000, 2.16860000, '2026-05-08 18:00:00'),
+
+-- Plan 21: Cita homosexual cena
+(11, 22, 'Cena casera y vino en Logrono',
+ 'Preparare una cena sencilla en casa con buen vino y musica suave. Busco una conversacion autentica y una noche relajada entre dos.',
+ 2, 42.46610000, -2.44910000, '2026-05-12 21:00:00');
 
 -- ======================================
 -- FOTOS PLANES
@@ -190,7 +220,19 @@ INSERT INTO fotos_planes (id_plan, url, orden) VALUES
 (14, 'https://picsum.photos/seed/sushi1/600/400',   0),
 (14, 'https://picsum.photos/seed/sushi2/600/400',   1),
 -- Plan 15: Karaoke
-(15, 'https://picsum.photos/seed/karaoke1/600/400', 0);
+(15, 'https://picsum.photos/seed/karaoke1/600/400', 0),
+-- Plan 16: Cafe Retiro
+(16, 'https://picsum.photos/seed/citahetero1/600/400', 0),
+-- Plan 17: Brunch Chamberi
+(17, 'https://picsum.photos/seed/citahetero2/600/400', 0),
+-- Plan 18: Vinos Lavapies
+(18, 'https://picsum.photos/seed/citabi1/600/400', 0),
+-- Plan 19: Atardecer Cadiz
+(19, 'https://picsum.photos/seed/citabi2/600/400', 0),
+-- Plan 20: Museo Barcelona
+(20, 'https://picsum.photos/seed/citagay1/600/400', 0),
+-- Plan 21: Cena Logrono
+(21, 'https://picsum.photos/seed/citagay2/600/400', 0);
 
 -- ======================================
 -- SOLICITUDES
@@ -290,3 +332,15 @@ INSERT INTO notificaciones (id_usuario, id_solicitud, tipo) VALUES
 (10, 12, 'recibida'),
 -- Andrea recibe que fue aceptada al karaoke
 (8, 12, 'aceptada');
+
+-- ======================================
+-- FAVORITOS
+-- ======================================
+INSERT INTO favoritos (id_usuario, id_plan) VALUES
+(1, 2),
+(1, 7),
+(2, 1),
+(3, 9),
+(4, 10),
+(8, 15),
+(12, 3);

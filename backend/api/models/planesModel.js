@@ -18,7 +18,14 @@ export async function guardarFotosPlan(id_plan, urls) {
   }
 }
 
-export async function getPlanes({ lat, lng, radio = 50, excludeUserId = null, hostOrientation = null } = {}) {
+export async function getPlanes({
+  lat,
+  lng,
+  radio = 50,
+  excludeUserId = null,
+  hostOrientation = null,
+  capacityMode = null,
+} = {}) {
   const conditions = [];
   const params = [];
 
@@ -32,11 +39,19 @@ export async function getPlanes({ lat, lng, radio = 50, excludeUserId = null, ho
     params.push(hostOrientation);
   }
 
+  if (capacityMode === "pareja") {
+    conditions.push("p.max_asistentes = 2");
+  }
+
+  if (capacityMode === "grupo") {
+    conditions.push("p.max_asistentes > 2");
+  }
+
   const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
   const [rows] = await connection.query(
     `SELECT p.id, p.titulo, p.descripcion, p.max_asistentes, p.lat, p.lng, p.fecha_plan, p.fecha_creacion,
-            u.nombre AS host_nombre, u.id AS host_id, u.orientacion AS host_orientacion,
+            u.nombre AS host_nombre, u.id AS host_id, u.genero AS host_genero, u.orientacion AS host_orientacion,
             (SELECT fp.url FROM fotos_planes fp WHERE fp.id_plan = p.id ORDER BY fp.orden LIMIT 1) AS foto,
             i.nombre AS interes, i.categoria,
             (SELECT COUNT(*) FROM solicitudes s WHERE s.id_plan = p.id AND s.estado = 'aceptada') AS spots_filled

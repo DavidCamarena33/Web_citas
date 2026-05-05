@@ -5,12 +5,16 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 export async function listarPlanes(req, res, next) {
   try {
     const orientacion = req.query.orientacion;
+    const modalidad = req.query.modalidad;
     const hostOrientation =
       orientacion && orientacion !== 'all' ? orientacion : null;
+    const capacityMode =
+      modalidad === 'pareja' || modalidad === 'grupo' ? modalidad : null;
 
     const planes = await getPlanes({
       excludeUserId: req.id,
       hostOrientation,
+      capacityMode,
     });
     const planesConFoto = planes.map(p => ({
       ...p,

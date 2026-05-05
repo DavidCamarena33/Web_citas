@@ -158,6 +158,26 @@ CREATE TABLE notificaciones (
 );
 
 -- ======================================
+-- FAVORITOS
+-- ======================================
+CREATE TABLE favoritos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  id_usuario INT NOT NULL,
+  id_plan INT NOT NULL,
+  fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  UNIQUE (id_usuario, id_plan),
+
+  CONSTRAINT fk_favorito_usuario
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_favorito_plan
+    FOREIGN KEY (id_plan) REFERENCES planes(id)
+    ON DELETE CASCADE
+);
+
+-- ======================================
 -- POBLADO DE INTERESES (50 ITEMS)
 -- ======================================
 INSERT INTO intereses (nombre, categoria) VALUES

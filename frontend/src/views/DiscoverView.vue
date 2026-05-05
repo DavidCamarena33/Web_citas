@@ -26,23 +26,6 @@
             <span class="select-icon material-symbols-outlined">expand_more</span>
           </div>
         </div>
-
-        <div class="orientation-filter">
-          <label class="filter-label" for="orientation-filter">Orientacion</label>
-          <div class="select-wrap">
-            <select
-              id="orientation-filter"
-              v-model="selectedOrientacion"
-              class="filter-select"
-            >
-              <option value="all">Todas</option>
-              <option value="hetero">Heterosexual</option>
-              <option value="bi">Bisexual</option>
-              <option value="homosexual">Homosexual</option>
-            </select>
-            <span class="select-icon material-symbols-outlined">expand_more</span>
-          </div>
-        </div>
       </div>
 
       <!-- Grid Feed -->
@@ -56,18 +39,20 @@
         </div>
         <div v-else class="plans-grid">
           <PlanCard
-            v-for="plan in filteredPlanes"
+            v-for="plan in visiblePlanes"
             :key="plan.id"
             :plan="plan"
             :join-status="plan.joinStatus"
+            :is-favorite="favoritePlanIds.has(Number(plan.id))"
             @click="openPlan"
             @join="handleJoin"
+            @toggle-favorite="handleToggleFavorite"
           />
         </div>
         
         <!-- Load More -->
-        <div class="flex justify-center mt-12 mb-20" v-if="filteredPlanes.length > 0">
-          <button class="btn-load-more">
+        <div class="flex justify-center mt-12 mb-20" v-if="canLoadMore">
+          <button class="btn-load-more" @click="loadMorePlanes">
             Ver más actividades
             <span class="material-symbols-outlined">expand_more</span>
           </button>
@@ -103,8 +88,12 @@ const router = useRouter();
 const drawerOpen = ref(false);
 const toast = ref("");
 const selectedCategoria = ref("all");
-const selectedOrientacion = ref("all");
+const intereses = ref([]);
 const userCoords = ref(null);
+const userGenero = ref("");
+const userOrientacion = ref("all");
+const PLANES_BATCH_SIZE = 6;
+const visiblePlanesCount = ref(PLANES_BATCH_SIZE);
 
 const joinStatusByPlanId = computed(() => {
   const map = new Map();
@@ -129,37 +118,54 @@ const filteredPlanes = computed(() => {
     const matchesCategoria =
       selectedCategoria.value === "all" || plan.categoria === selectedCategoria.value;
     const matchesOrientacion =
-      selectedOrientacion.value === "all" ||
-      plan.host_orientacion === selectedOrientacion.value;
+      userOrientacion.value === "all" ||
+      normalizeOrientacion(plan.host_orientacion) === userOrientacion.value;
+    const matchesGenero = matchesGeneroDeseado(plan.host_genero);
 
-    return matchesCategoria && matchesOrientacion;
+    return matchesCategoria && matchesOrientacion && matchesGenero;
   });
 });
+const visiblePlanes = computed(() =>
+  filteredPlanes.value.slice(0, visiblePlanesCount.value)
+);
+const canLoadMore = computed(
+  () => visiblePlanesCount.value < filteredPlanes.value.length
+);
+const favoritePlanIds = computed(
+  () => new Set(store.favoritePlanIds.map((id) => Number(id)))
+);
 
 const categorias = computed(() => {
   const uniques = new Set(
-    planes.value
-      .map((plan) => plan.categoria)
+    intereses.value
+      .map((interes) => interes.categoria)
       .filter(Boolean),
   );
   return Array.from(uniques);
 });
 
 onMounted(async () => {
-  await Promise.all([
-    store.fetchPlanes(selectedOrientacion.value),
+  const [allIntereses] = await Promise.all([
+    store.getIntereses(),
     store.fetchMisPlanes(),
-    loadUserCoords(),
+    store.fetchFavoritos(),
+    loadUserContext(),
   ]);
+  intereses.value = allIntereses;
 });
 
-watch(selectedOrientacion, async (value) => {
-  await store.fetchPlanes(value);
+watch(selectedCategoria, () => {
+  visiblePlanesCount.value = PLANES_BATCH_SIZE;
 });
 
 function filtrar(categoria) {
   selectedCategoria.value = categoria;
 }
+
+function loadMorePlanes() {
+  visiblePlanesCount.value += PLANES_BATCH_SIZE;
+}
+
 function openPlan(plan) {
   router.push(`/planes/${plan.id}`);
 }
@@ -175,21 +181,81 @@ async function handleJoin(plan) {
   }
 }
 
+async function handleToggleFavorite(plan) {
+  try {
+    const result = await store.toggleFavorito(plan.id);
+    showToast(result.favorite ? "❤ Guardado en favoritos" : "Se quitó de favoritos");
+  } catch (e) {
+    const msg = e?.response?.data?.message || "No se pudo actualizar favorito";
+    showToast("⚠️ " + msg);
+  }
+}
+
+function normalizeOrientacion(orientacion) {
+  if (!orientacion) return "all";
+
+  const normalized = String(orientacion).trim().toLowerCase();
+
+  if (normalized === "homosexual" || normalized === "gay") return "gay";
+  if (normalized === "heterosexual" || normalized === "hetero") return "hetero";
+  if (normalized === "bisexual" || normalized === "bi") return "bi";
+
+  return normalized;
+}
+
+function normalizeGenero(genero) {
+  if (!genero) return "";
+  return String(genero).trim().toLowerCase();
+}
+
+function matchesGeneroDeseado(hostGenero) {
+  const generoUsuario = normalizeGenero(userGenero.value);
+  const generoHost = normalizeGenero(hostGenero);
+
+  if (!generoUsuario || !generoHost || userOrientacion.value === "all") return true;
+
+  if (userOrientacion.value === "bi") {
+    return true;
+  }
+
+  if (userOrientacion.value === "hetero") {
+    return generoUsuario !== generoHost;
+  }
+
+  if (userOrientacion.value === "gay") {
+    return generoUsuario === generoHost;
+  }
+
+  return true;
+}
+
 function showToast(msg) {
   toast.value = msg;
   setTimeout(() => (toast.value = ""), 3000);
 }
 
-async function loadUserCoords() {
+async function loadUserContext() {
   try {
     const perfil = await authStore.fetchPerfil();
+    const orientacionPerfil = perfil?.orientacion || "all";
+
+    userGenero.value = normalizeGenero(perfil?.genero);
+    userOrientacion.value = normalizeOrientacion(orientacionPerfil);
+
     if (perfil?.lat && perfil?.lng) {
       userCoords.value = {
         lat: Number(perfil.lat),
         lng: Number(perfil.lng),
       };
     }
-  } catch (e) {}
+
+    await store.fetchPlanes({
+      orientacion: orientacionPerfil,
+      modalidad: "pareja",
+    });
+  } catch (e) {
+    await store.fetchPlanes({ modalidad: "pareja" });
+  }
 }
 </script>
 

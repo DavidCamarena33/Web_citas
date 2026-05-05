@@ -207,15 +207,26 @@ const currentJoinStatus = computed(() => {
   if (!existing || existing.tipo === "hosting") return "";
   return existing.tipo;
 });
+const occupiedSpots = computed(() => {
+  const acceptedGuests = Number(plan.value?.spots_filled || 0);
+  return 1 + acceptedGuests;
+});
+const spotsLeft = computed(() => {
+  const maxAsistentes = Number(plan.value?.max_asistentes || 8);
+  return Math.max(0, maxAsistentes - occupiedSpots.value);
+});
+const isPlanFull = computed(() => spotsLeft.value <= 0);
 const isJoinDisabled = computed(() => {
   return (
     isOwnPlan.value ||
+    isPlanFull.value ||
     currentJoinStatus.value === "pendiente" ||
     currentJoinStatus.value === "aceptada"
   );
 });
 const joinButtonLabel = computed(() => {
   if (isOwnPlan.value) return "Es tu plan";
+  if (isPlanFull.value) return "Plan completo";
   if (currentJoinStatus.value === "aceptada") return "Ya unido";
   if (currentJoinStatus.value === "pendiente") return "Solicitud enviada";
   return joining.value ? "Uniendo..." : "Unirme al plan";
@@ -228,16 +239,12 @@ const distanceLabel = computed(() =>
     })
   )
 );
-const spotsLeft = computed(() => {
-  const maxAsistentes = Number(plan.value?.max_asistentes || 8);
-  const ocupadas = Number(plan.value?.spots_filled || 0);
-  return Math.max(0, maxAsistentes - ocupadas);
-});
-
 async function handleJoin() {
   if (isJoinDisabled.value) {
     if (isOwnPlan.value) {
       showToast("⚠️ No puedes unirte a un plan creado por ti");
+    } else if (isPlanFull.value) {
+      showToast("⚠️ Este plan ya está completo");
     } else if (currentJoinStatus.value === "pendiente") {
       showToast("⚠️ Ya has enviado una solicitud para este plan");
     } else if (currentJoinStatus.value === "aceptada") {
@@ -361,7 +368,6 @@ function formatRequestDate(d) {
 
 <style scoped>
 .page-layout.detail-page {
-  padding-bottom: 100px; /* Space for action bar */
   background: var(--bg);
 }
 .page-content {
@@ -579,9 +585,11 @@ function formatRequestDate(d) {
 }
 
 .bottom-action-bar {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
+  position: sticky;
+  bottom: 0;
+  margin-top: 1.5rem;
   background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(10px);
   padding: 1.2rem 1.5rem;
   display: flex;
   justify-content: space-between;

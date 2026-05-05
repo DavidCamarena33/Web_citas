@@ -9,6 +9,14 @@ export const getByEmail = async (email) => {
   return results;
 };
 
+export const getById = async (id) => {
+  const [[user]] = await connection.query(
+    "SELECT id, nombre, email, rol FROM usuarios WHERE id = ?",
+    [id],
+  );
+  return user || null;
+};
+
 export async function registro(nombre, email, edad ,contrasena, genero, orientacion) {
   const hashPass = await bcrypt.hash(contrasena, 10);
 
@@ -60,6 +68,27 @@ export async function subirFotoUsuario(id_usuario, filename) {
   const [result] = await connection.query(
     `INSERT INTO fotos_usuarios (id_usuario, url, orden) VALUES (?, ?, ?)`,
     [id_usuario, filename, next_orden]
+  );
+  return result;
+}
+
+export async function actualizarFotoPrincipalUsuario(id_usuario, filename) {
+  const [[fotoPrincipal]] = await connection.query(
+    `SELECT id FROM fotos_usuarios WHERE id_usuario = ? ORDER BY orden ASC LIMIT 1`,
+    [id_usuario]
+  );
+
+  if (fotoPrincipal) {
+    const [result] = await connection.query(
+      `UPDATE fotos_usuarios SET url = ? WHERE id = ?`,
+      [filename, fotoPrincipal.id]
+    );
+    return result;
+  }
+
+  const [result] = await connection.query(
+    `INSERT INTO fotos_usuarios (id_usuario, url, orden) VALUES (?, ?, 0)`,
+    [id_usuario, filename]
   );
   return result;
 }
