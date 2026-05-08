@@ -93,13 +93,22 @@
           </div>
           <div v-else class="plans-grid">
             <PlanCard
-              v-for="plan in catPlanes"
+              v-for="plan in visibleCatPlanes"
               :key="plan.id"
               :plan="plan"
               :join-status="plan.joinStatus"
               @click="$router.push(`/planes/${plan.id}`)"
               @join="handleJoin"
             />
+          </div>
+          <div
+            v-if="canLoadMoreCatPlanes"
+            class="flex justify-center mt-12 mb-20"
+          >
+            <button class="btn-load-more" @click="loadMoreCatPlanes">
+              Ver más actividades
+              <span class="material-symbols-outlined">expand_more</span>
+            </button>
           </div>
         </div>
       </div>
@@ -109,7 +118,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from "vue";
+import { ref, computed, onMounted, nextTick, watch } from "vue";
 import NavBar from "../components/NavBar.vue";
 import SideDrawer from "../components/SideDrawer.vue";
 import PlanCard from "../components/PlanCard.vue";
@@ -127,6 +136,8 @@ const planesSection = ref(null);
 const planesStore = usePlanesStore();
 const authStore = useAuthStore();
 const userCoords = ref(null);
+const PLANES_BATCH_SIZE = 6;
+const visibleCatPlanesCount = ref(PLANES_BATCH_SIZE);
 
 const API = "http://localhost:3000/api";
 
@@ -228,6 +239,12 @@ const catPlanes = computed(() => {
       ),
     }));
 });
+const visibleCatPlanes = computed(() =>
+  catPlanes.value.slice(0, visibleCatPlanesCount.value)
+);
+const canLoadMoreCatPlanes = computed(
+  () => visibleCatPlanesCount.value < catPlanes.value.length
+);
 
 function planesCount(cat) {
   return planesStore.planes.filter((p) => p.categoria === cat).length;
@@ -235,11 +252,16 @@ function planesCount(cat) {
 
 async function selectCat(cat) {
   selectedCat.value = cat.categoria;
+  visibleCatPlanesCount.value = PLANES_BATCH_SIZE;
   await nextTick();
   planesSection.value?.scrollIntoView({
     behavior: "smooth",
     block: "start",
   });
+}
+
+function loadMoreCatPlanes() {
+  visibleCatPlanesCount.value += PLANES_BATCH_SIZE;
 }
 
 async function handleJoin(plan) {
@@ -286,6 +308,10 @@ async function loadUserCoords() {
     }
   } catch (e) {}
 }
+
+watch(selectedCat, () => {
+  visibleCatPlanesCount.value = PLANES_BATCH_SIZE;
+});
 </script>
 
 <style scoped>
@@ -345,6 +371,34 @@ async function loadUserCoords() {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
   gap: 1.25rem;
+}
+.mt-12 {
+  margin-top: 3rem;
+}
+.mb-20 {
+  margin-bottom: 5rem;
+}
+.flex {
+  display: flex;
+}
+.justify-center {
+  justify-content: center;
+}
+
+.btn-load-more {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  background: rgba(255, 255, 255, 0.4);
+  color: var(--primary);
+  font-weight: 800;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+  transition: all var(--transition);
+}
+.btn-load-more:hover {
+  background: rgba(255, 255, 255, 0.6);
 }
 
 @media (max-width: 768px) {
