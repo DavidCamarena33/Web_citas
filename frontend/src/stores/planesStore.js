@@ -71,5 +71,17 @@ export const usePlanesStore = defineStore('planes', {
       const { data } = await axios.post(`${API}/solicitudes`, { id_plan, mensaje }, { withCredentials: true });
       return data;
     },
+    async fetchRatingStatus(id_plan) {
+      const { data } = await axios.get(`${API}/planes/${id_plan}/valoracion`, {
+        withCredentials: true,
+      });
+      return data;
+    },
+    async submitRating(id_plan, payload) {
+      const { data } = await axios.post(`${API}/planes/${id_plan}/valoracion`, payload, {
+        withCredentials: true,
+      });
+      return data;
+    },
   },
 });

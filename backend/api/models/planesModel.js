@@ -47,6 +47,8 @@ export async function getPlanes({
     conditions.push("p.max_asistentes > 2");
   }
 
+  conditions.push("(p.fecha_plan IS NULL OR p.fecha_plan >= NOW())");
+
   const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
   const [rows] = await connection.query(
@@ -54,7 +56,9 @@ export async function getPlanes({
             u.nombre AS host_nombre, u.id AS host_id, u.genero AS host_genero, u.orientacion AS host_orientacion,
             (SELECT fp.url FROM fotos_planes fp WHERE fp.id_plan = p.id ORDER BY fp.orden LIMIT 1) AS foto,
             i.nombre AS interes, i.categoria,
-            (SELECT COUNT(*) FROM solicitudes s WHERE s.id_plan = p.id AND s.estado = 'aceptada') AS spots_filled
+            (SELECT COUNT(*) FROM solicitudes s WHERE s.id_plan = p.id AND s.estado = 'aceptada') AS spots_filled,
+            (SELECT ROUND(AVG(vp.puntuacion), 1) FROM valoraciones_planes vp WHERE vp.id_plan = p.id) AS average_rating,
+            (SELECT COUNT(*) FROM valoraciones_planes vp WHERE vp.id_plan = p.id) AS ratings_count
      FROM planes p
      JOIN usuarios u ON u.id = p.id_usuario
      JOIN intereses i ON i.id = p.id_interes
@@ -71,7 +75,9 @@ export async function getPlanById(id) {
     `SELECT p.*, u.nombre AS host_nombre, u.id AS host_id,
             i.nombre AS interes, i.categoria,
             (SELECT fp.url FROM fotos_planes fp WHERE fp.id_plan = p.id ORDER BY fp.orden LIMIT 1) AS foto,
-            (SELECT COUNT(*) FROM solicitudes s WHERE s.id_plan = p.id AND s.estado = 'aceptada') AS spots_filled
+            (SELECT COUNT(*) FROM solicitudes s WHERE s.id_plan = p.id AND s.estado = 'aceptada') AS spots_filled,
+            (SELECT ROUND(AVG(vp.puntuacion), 1) FROM valoraciones_planes vp WHERE vp.id_plan = p.id) AS average_rating,
+            (SELECT COUNT(*) FROM valoraciones_planes vp WHERE vp.id_plan = p.id) AS ratings_count
      FROM planes p
      JOIN usuarios u ON u.id = p.id_usuario
      JOIN intereses i ON i.id = p.id_interes
@@ -94,6 +100,8 @@ export async function getPlanesByUsuario(id_usuario) {
             (SELECT fp.url FROM fotos_planes fp WHERE fp.id_plan = p.id ORDER BY fp.orden LIMIT 1) AS foto,
             i.nombre AS interes,
             (SELECT COUNT(*) FROM solicitudes s WHERE s.id_plan = p.id AND s.estado = 'aceptada') AS spots_filled,
+            (SELECT ROUND(AVG(vp.puntuacion), 1) FROM valoraciones_planes vp WHERE vp.id_plan = p.id) AS average_rating,
+            (SELECT COUNT(*) FROM valoraciones_planes vp WHERE vp.id_plan = p.id) AS ratings_count,
             'hosting' AS tipo
      FROM planes p
      JOIN intereses i ON i.id = p.id_interes
@@ -103,6 +111,8 @@ export async function getPlanesByUsuario(id_usuario) {
             (SELECT fp.url FROM fotos_planes fp WHERE fp.id_plan = p.id ORDER BY fp.orden LIMIT 1) AS foto,
             i.nombre AS interes,
             (SELECT COUNT(*) FROM solicitudes s2 WHERE s2.id_plan = p.id AND s2.estado = 'aceptada') AS spots_filled,
+            (SELECT ROUND(AVG(vp.puntuacion), 1) FROM valoraciones_planes vp WHERE vp.id_plan = p.id) AS average_rating,
+            (SELECT COUNT(*) FROM valoraciones_planes vp WHERE vp.id_plan = p.id) AS ratings_count,
             s.estado AS tipo
      FROM solicitudes s
      JOIN planes p ON p.id = s.id_plan
@@ -112,6 +122,59 @@ export async function getPlanesByUsuario(id_usuario) {
     [id_usuario, id_usuario]
   );
   return rows;
+}
+
+export async function getPlanRatingSummary(id_plan) {
+  const [[row]] = await connection.query(
+    `SELECT
+      ROUND(AVG(puntuacion), 1) AS average_rating,
+      COUNT(*) AS ratings_count
+     FROM valoraciones_planes
+     WHERE id_plan = ?`,
+    [id_plan]
+  );
+  return row || { average_rating: null, ratings_count: 0 };
+}
+
+export async function getPlanRatingByUser(id_plan, id_usuario) {
+  const [[row]] = await connection.query(
+    `SELECT puntuacion, comentario, fecha_creacion
+     FROM valoraciones_planes
+     WHERE id_plan = ? AND id_usuario = ?`,
+    [id_plan, id_usuario]
+  );
+  return row || null;
+}
+
+export async function canUserRatePlan(id_plan, id_usuario) {
+  const [[row]] = await connection.query(
+    `SELECT p.fecha_plan
+     FROM solicitudes s
+     JOIN planes p ON p.id = s.id_plan
+     WHERE s.id_plan = ?
+       AND s.id_solicitante = ?
+       AND s.estado = 'aceptada'
+       AND p.fecha_plan IS NOT NULL
+     LIMIT 1`,
+    [id_plan, id_usuario]
+  );
+
+  if (!row?.fecha_plan) return false;
+
+  const planDate = new Date(row.fecha_plan);
+  return !Number.isNaN(planDate.getTime()) && planDate < new Date();
+}
+
+export async function upsertPlanRating(id_plan, id_usuario, puntuacion, comentario) {
+  const [result] = await connection.query(
+    `INSERT INTO valoraciones_planes (id_plan, id_usuario, puntuacion, comentario)
+     VALUES (?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       puntuacion = VALUES(puntuacion),
+       comentario = VALUES(comentario)`,
+    [id_plan, id_usuario, puntuacion, comentario || null]
+  );
+  return result;
 }
 
 export async function getIntereses() {

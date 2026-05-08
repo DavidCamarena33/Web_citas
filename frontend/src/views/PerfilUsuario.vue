@@ -27,6 +27,7 @@
                 </div>
                 <div class="perfil-avatar-actions">
                   <button
+                    v-if="isOwnProfile"
                     class="btn btn-primary btn-sm"
                     type="button"
                     @click="triggerUpload"
@@ -34,11 +35,16 @@
                     {{ hasFotoPrincipal ? "Cambiar foto" : "Añadir foto" }}
                   </button>
                   <p class="text-muted text-sm">
-                    {{ hasFotoPrincipal ? "Esta será tu foto principal." : "Sube tu primera foto de perfil." }}
+                    {{
+                      isOwnProfile
+                        ? (hasFotoPrincipal ? "Esta será tu foto principal." : "Sube tu primera foto de perfil.")
+                        : "Perfil público del creador del plan."
+                    }}
                   </p>
                 </div>
               </div>
               <input
+                v-if="isOwnProfile"
                 ref="fileInput"
                 type="file"
                 accept="image/*"
@@ -56,6 +62,7 @@
                     {{ perfil.direccion || "Ubicación no establecida" }}
                   </p>
                   <button
+                    v-if="isOwnProfile"
                     class="btn btn-primary btn-sm location-btn"
                     @click="$router.push('/ubicacion')"
                   >
@@ -66,6 +73,7 @@
                   <div class="perfil-bio-header">
                     <h3>Sobre mí</h3>
                     <button
+                      v-if="isOwnProfile"
                       class="btn btn-ghost btn-sm"
                       @click="editingBio = !editingBio"
                     >
@@ -108,7 +116,7 @@
                 </div>
                 <div class="stat-divider"></div>
                 <div class="stat-block">
-                  <span class="stat-num text-primary">⭐ 4.9</span>
+                  <span class="stat-num text-primary">⭐ {{ averageRatingLabel }}</span>
                   <span class="stat-label">Valoración</span>
                 </div>
               </div>
@@ -122,28 +130,30 @@
                 :class="{ active: activeSection === 'fotos' }"
                 @click="activeSection = 'fotos'"
               >
-                Mis fotos
+                {{ profileTitlePhotos }}
               </button>
               <button
                 class="perfil-tab"
                 :class="{ active: activeSection === 'planes' }"
                 @click="activeSection = 'planes'"
               >
-                Mis planes
+                {{ profileTitlePlans }}
               </button>
             </div>
 
             <div v-if="activeSection === 'fotos'" class="perfil-photos-card">
               <div class="perfil-photos-header">
-                <p class="text-muted text-sm">Añade más fotos para que se queden guardadas en tu perfil.</p>
-                <label class="photo-upload-label">
+                <p class="text-muted text-sm">
+                  {{ isOwnProfile ? "Añade más fotos para que se queden guardadas en tu perfil." : "Aquí puedes ver las fotos públicas del perfil." }}
+                </p>
+                <label v-if="isOwnProfile" class="photo-upload-label">
                   <input type="file" accept="image/*" @change="uploadFotoSecundaria" />
                   <span>+ Añadir foto</span>
                 </label>
               </div>
               <div class="perfil-photos-grid">
                 <p v-if="!perfil.fotos?.length" class="perfil-photos-empty text-muted text-sm">
-                  Todavía no has subido fotos.
+                  {{ isOwnProfile ? "Todavía no has subido fotos." : "Este usuario todavía no ha subido fotos." }}
                 </p>
                 <img
                   v-for="(foto, i) in perfil.fotos"
@@ -166,9 +176,9 @@
 
             <div v-else class="perfil-planes-card">
               <div class="perfil-planes-header">
-                <p class="text-muted text-sm">Aquí se muestran los planes que estás organizando.</p>
+                <p class="text-muted text-sm">{{ profilePlansDescription }}</p>
                 <button
-                  v-if="userHostedPlans.length"
+                  v-if="isOwnProfile && userHostedPlans.length"
                   class="btn btn-ghost btn-sm"
                   @click="$router.push('/mis-planes')"
                 >
@@ -181,7 +191,7 @@
               </div>
 
               <div v-else-if="!userHostedPlans.length" class="perfil-planes-empty text-muted">
-                Todavía no has creado planes.
+                {{ isOwnProfile ? "Todavía no has creado planes." : "Este usuario todavía no ha creado planes." }}
               </div>
 
               <div v-else class="perfil-planes-grid">
@@ -216,49 +226,72 @@
         </template>
       </div>
     </main>
-    <button class="fab" @click="$router.push('/crear-plan')">+</button>
+    <button v-if="isOwnProfile" class="fab" @click="$router.push('/crear-plan')">+</button>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import NavBar from "../components/NavBar.vue";
 import SideDrawer from "../components/SideDrawer.vue";
 import axios from "axios";
 import { usePlanesStore } from "../stores/planesStore";
+import { useAuthStore } from "../stores/authStore";
 
 const drawerOpen = ref(false);
 const loading = ref(false);
-const perfil = ref({ nombre: "", fotos: [], stats: {} });
+const perfil = ref(createEmptyProfile());
 const editingBio = ref(false);
 const bioText = ref("");
 const fileInput = ref(null);
 const uploadMsg = ref("");
 const plansLoading = ref(false);
 const activeSection = ref("fotos");
+const hostedPlans = ref([]);
 
 const API = "http://localhost:3000/api";
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
 const planesStore = usePlanesStore();
 
-onMounted(async () => {
-  loading.value = true;
-  plansLoading.value = true;
-  try {
-    const [{ data }] = await Promise.all([
-      axios.get(`${API}/perfil`, {
-        withCredentials: true,
-      }),
-      planesStore.fetchMisPlanes(),
-    ]);
-    perfil.value = data;
-    bioText.value = data.descripcion || "";
-  } catch (e) {
-    console.error(e);
-  } finally {
-    plansLoading.value = false;
-    loading.value = false;
-  }
+function createEmptyProfile() {
+  return { id: null, nombre: "", fotos: [], stats: {}, descripcion: "", direccion: "" };
+}
+
+const routeProfileId = computed(() => {
+  const rawId = route.params.id;
+  const parsed = Number(rawId);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 });
+
+const isOwnProfile = computed(() => {
+  if (!routeProfileId.value) return true;
+  return Number(authStore.user?.id) === routeProfileId.value;
+});
+
+const profileTitlePhotos = computed(() => (isOwnProfile.value ? "Mis fotos" : "Fotos"));
+const profileTitlePlans = computed(() => (isOwnProfile.value ? "Mis planes" : "Planes creados"));
+const profilePlansDescription = computed(() =>
+  isOwnProfile.value
+    ? "Aquí se muestran los planes que estás organizando."
+    : `Aquí se muestran los planes que organiza ${perfil.value.nombre || "este usuario"}.`
+);
+
+onMounted(async () => {
+  if (!authStore.user && !authStore.isAuthenticated) {
+    await authStore.checkAuth();
+  }
+  await loadProfileView();
+});
+
+watch(
+  () => route.fullPath,
+  async () => {
+    await loadProfileView();
+  }
+);
 
 const initials = computed(() => {
   return (perfil.value.nombre || "?")
@@ -279,8 +312,12 @@ const edad = computed(() => {
 });
 
 const hasFotoPrincipal = computed(() => (perfil.value.fotos || []).length > 0);
+const averageRatingLabel = computed(() => {
+  const value = Number(perfil.value.stats?.average_rating || 0);
+  return value ? value.toFixed(1) : "Nuevo";
+});
 const userHostedPlans = computed(() =>
-  [...planesStore.misPlanes]
+  [...(isOwnProfile.value ? planesStore.misPlanes : hostedPlans.value)]
     .filter((plan) => plan.tipo === "hosting")
     .sort((a, b) => {
       const aTime = a.fecha_plan ? new Date(a.fecha_plan).getTime() : Number.MAX_SAFE_INTEGER;
@@ -289,11 +326,67 @@ const userHostedPlans = computed(() =>
     })
 );
 
+async function loadProfileView() {
+  loading.value = true;
+  plansLoading.value = true;
+  editingBio.value = false;
+  uploadMsg.value = "";
+  perfil.value = createEmptyProfile();
+  hostedPlans.value = [];
+  bioText.value = "";
+
+  try {
+    const profilePath = routeProfileId.value ? `/perfil/${routeProfileId.value}` : "/perfil";
+    const requests = [
+      axios.get(`${API}${profilePath}`, {
+        withCredentials: true,
+      }),
+    ];
+
+    if (isOwnProfile.value) {
+      requests.push(planesStore.fetchMisPlanes());
+    } else {
+      requests.push(
+        axios.get(`${API}/perfil/${routeProfileId.value}/planes`, {
+          withCredentials: true,
+        })
+      );
+    }
+
+    const [profileResponse, plansResponse] = await Promise.all(requests);
+    perfil.value = {
+      ...createEmptyProfile(),
+      ...profileResponse.data,
+      fotos: Array.isArray(profileResponse.data?.fotos) ? profileResponse.data.fotos : [],
+      stats: profileResponse.data?.stats || {},
+    };
+    bioText.value = perfil.value.descripcion || "";
+
+    if (isOwnProfile.value) {
+      hostedPlans.value = [];
+    } else {
+      hostedPlans.value = Array.isArray(plansResponse.data) ? plansResponse.data : [];
+    }
+  } catch (e) {
+    console.error(e);
+    perfil.value = createEmptyProfile();
+    hostedPlans.value = [];
+    if (axios.isAxiosError(e) && e.response?.status === 404) {
+      router.push("/discover");
+    }
+  } finally {
+    plansLoading.value = false;
+    loading.value = false;
+  }
+}
+
 function triggerUpload() {
+  if (!isOwnProfile.value) return;
   fileInput.value?.click();
 }
 
 async function uploadFotoPrincipal(e) {
+  if (!isOwnProfile.value) return;
   const file = e.target.files?.[0];
   if (!file) return;
   uploadMsg.value = hasFotoPrincipal.value
@@ -322,6 +415,7 @@ async function uploadFotoPrincipal(e) {
 }
 
 async function uploadFotoSecundaria(e) {
+  if (!isOwnProfile.value) return;
   const file = e.target.files?.[0];
   if (!file) return;
   uploadMsg.value = "⏳ Subiendo foto...";
@@ -342,6 +436,7 @@ async function uploadFotoSecundaria(e) {
 }
 
 async function saveBio() {
+  if (!isOwnProfile.value) return;
   try {
     await axios.put(
       `${API}/perfil/descripcion`,
@@ -388,13 +483,12 @@ function formatPlanDate(date) {
   );
 }
 .perfil-info {
-  padding: 0 1.5rem 1.5rem;
+  padding: 1.25rem 1.5rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 .perfil-avatar-row {
-  margin-top: -50px;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -665,11 +759,7 @@ function formatPlanDate(date) {
   }
 
   .perfil-info {
-    padding: 0 1.1rem 1.1rem;
-  }
-
-  .perfil-avatar-row {
-    margin-top: -42px;
+    padding: 1rem 1.1rem 1.1rem;
   }
 
   .perfil-name {

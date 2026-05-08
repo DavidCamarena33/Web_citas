@@ -178,6 +178,31 @@ CREATE TABLE favoritos (
 );
 
 -- ======================================
+-- VALORACIONES DE PLANES
+-- ======================================
+CREATE TABLE valoraciones_planes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  id_plan INT NOT NULL,
+  id_usuario INT NOT NULL,
+  puntuacion TINYINT UNSIGNED NOT NULL,
+  comentario TEXT,
+  fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  UNIQUE (id_plan, id_usuario),
+
+  CONSTRAINT chk_valoracion_puntuacion
+    CHECK (puntuacion BETWEEN 1 AND 5),
+
+  CONSTRAINT fk_valoracion_plan
+    FOREIGN KEY (id_plan) REFERENCES planes(id)
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_valoracion_usuario
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
+    ON DELETE CASCADE
+);
+
+-- ======================================
 -- POBLADO DE INTERESES (50 ITEMS)
 -- ======================================
 INSERT INTO intereses (nombre, categoria) VALUES
