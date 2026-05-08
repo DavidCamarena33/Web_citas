@@ -10,26 +10,6 @@
           <p class="text-muted">Descubre planes por categoría de interés</p>
         </div>
 
-        <!-- Filters -->
-        <div class="tabs fade-in-up">
-          <button
-            class="tab"
-            :class="{ active: filtro === 'all' }"
-            @click="filtro = 'all'"
-          >
-            Todas
-          </button>
-          <button
-            v-for="tab in categoryTabs"
-            :key="tab.key"
-            class="tab"
-            :class="{ active: filtro === tab.key }"
-            @click="filtro = tab.key"
-          >
-            {{ tab.label }}
-          </button>
-        </div>
-
         <div v-if="loading" class="loading-center">
           <div class="spinner"></div>
         </div>
@@ -129,7 +109,6 @@ import { calculateDistanceKm, formatDistanceKm } from "../utils/location";
 
 const drawerOpen = ref(false);
 const loading = ref(false);
-const filtro = ref("all");
 const intereses = ref([]);
 const selectedCat = ref(null);
 const planesSection = ref(null);
@@ -183,39 +162,8 @@ function normalizeCategory(value) {
     .trim();
 }
 
-const categoryLabelMap = {
-  deporte: "Deporte",
-  gastronomia: "Gastronomia",
-  cultura: "Cultura",
-  ocio: "Ocio",
-  lifestyle: "Lifestyle",
-  fiesta: "Fiesta",
-};
-
-const categoryTabs = computed(() => {
-  const desiredOrder = [
-    "deporte",
-    "gastronomia",
-    "cultura",
-    "ocio",
-    "lifestyle",
-    "fiesta",
-  ];
-
-  const availableKeys = new Set(
-    categories.value.map((c) => normalizeCategory(c.categoria))
-  );
-
-  return desiredOrder
-    .filter((key) => availableKeys.has(key))
-    .map((key) => ({ key, label: categoryLabelMap[key] || key }));
-});
-
 const filteredCats = computed(() => {
-  if (filtro.value === "all") return categories.value;
-  return categories.value.filter(
-    (c) => normalizeCategory(c.categoria) === filtro.value
-  );
+  return categories.value;
 });
 
 const joinStatusByPlanId = computed(() => {

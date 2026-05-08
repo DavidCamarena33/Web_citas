@@ -251,9 +251,10 @@ async function loadUserContext() {
 
     await store.fetchPlanes({
       orientacion: orientacionPerfil,
+      modalidad: "pareja",
     });
   } catch (e) {
-    await store.fetchPlanes();
+    await store.fetchPlanes({ modalidad: "pareja" });
   }
 }
 </script>
