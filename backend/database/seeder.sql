@@ -290,7 +290,7 @@ INSERT INTO mensajes (id_solicitud, id_emisor, mensaje) VALUES
 -- Solicitud 12 (Andrea -> Karaoke de Marta)
 (12, 10, 'Yupi! Somos ya 4. Avisame si encuentras aparcamiento por Gracia que yo nunca encuentro.'),
 (12, 8,  'Jaja voy en metro. Linea 3, Fontana. ?Quedamos en la puerta a las 22h?'),
-(12, 10, 'Perfecto! Alli estare. Voy a calentar voz :'D');
+(12, 10, 'Perfecto! Alli estare. Voy a calentar voz :D');
 
 -- ======================================
 -- NOTIFICACIONES
