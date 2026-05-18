@@ -36,13 +36,18 @@
         </div>
 
         <!-- Host Info -->
-        <div class="host-section card">
+        <button
+          class="host-section card"
+          :class="{ 'host-section-clickable': !isOwnPlan }"
+          type="button"
+          @click="openHostProfile"
+        >
           <div class="avatar avatar-md">{{ hostInitial }}</div>
           <div class="host-details">
             <span class="host-label">Organizado por</span>
             <span class="host-name">{{ plan.host_nombre }}</span>
           </div>
-        </div>
+        </button>
 
         <div v-if="isOwnPlan" class="requests-section card">
           <div class="requests-header">
@@ -110,6 +115,55 @@
           <h3>Sobre este plan</h3>
           <p class="detail-desc">{{ plan.descripcion }}</p>
         </div>
+
+        <div v-if="showRatingsSection" class="ratings-section card">
+          <div class="ratings-summary">
+            <div>
+              <h3>Valoraciones del plan</h3>
+              <p class="text-muted">
+                {{ ratingsCountText }}
+              </p>
+            </div>
+            <div class="ratings-average" v-if="ratingsCount > 0">
+              <span class="ratings-average-value">{{ averageRatingDisplay }}</span>
+              <span class="ratings-average-stars">★</span>
+            </div>
+          </div>
+
+          <div v-if="canRatePlan" class="rating-form">
+            <p class="text-muted">
+              {{ ratingFormTitle }}
+            </p>
+            <div class="rating-stars">
+              <button
+                v-for="star in 5"
+                :key="star"
+                type="button"
+                class="rating-star-btn"
+                :class="{ active: star <= ratingForm.puntuacion }"
+                @click="ratingForm.puntuacion = star"
+              >
+                ★
+              </button>
+            </div>
+            <textarea
+              v-model="ratingForm.comentario"
+              class="form-textarea"
+              placeholder="Cuéntanos qué tal fue el plan"
+            ></textarea>
+            <button
+              class="btn btn-primary"
+              :disabled="ratingSubmitting || !ratingForm.puntuacion"
+              @click="submitRating"
+            >
+              {{ ratingSubmitting ? "Guardando..." : userRating ? "Actualizar valoración" : "Enviar valoración" }}
+            </button>
+          </div>
+
+          <div v-else-if="isPlanEnded" class="text-muted">
+            {{ userRating ? "Ya has valorado este plan." : "Las valoraciones están disponibles para quienes participaron en el plan." }}
+          </div>
+        </div>
       </div>
 
       <!-- Bottom Action Bar -->
@@ -161,6 +215,9 @@ const solicitudes = ref([]);
 const loadingSolicitudes = ref(false);
 const processingSolicitudId = ref(null);
 const userCoords = ref(null);
+const ratingSubmitting = ref(false);
+const ratingStatus = ref({ canRate: false, userRating: null, averageRating: null, ratingsCount: 0 });
+const ratingForm = ref({ puntuacion: 0, comentario: "" });
 let map = null;
 let marker = null;
 
@@ -171,6 +228,7 @@ onMounted(async () => {
     }
 
     await Promise.all([loadPlan(), store.fetchMisPlanes(), loadUserCoords()]);
+    await loadRatingStatus();
     if (isOwnPlan.value) {
       await loadSolicitudes();
     }
@@ -216,9 +274,14 @@ const spotsLeft = computed(() => {
   return Math.max(0, maxAsistentes - occupiedSpots.value);
 });
 const isPlanFull = computed(() => spotsLeft.value <= 0);
+const isPlanEnded = computed(() => {
+  if (!plan.value?.fecha_plan) return false;
+  return new Date(plan.value.fecha_plan) < new Date();
+});
 const isJoinDisabled = computed(() => {
   return (
     isOwnPlan.value ||
+    isPlanEnded.value ||
     isPlanFull.value ||
     currentJoinStatus.value === "pendiente" ||
     currentJoinStatus.value === "aceptada"
@@ -226,11 +289,25 @@ const isJoinDisabled = computed(() => {
 });
 const joinButtonLabel = computed(() => {
   if (isOwnPlan.value) return "Es tu plan";
+  if (isPlanEnded.value) return "Plan finalizado";
   if (isPlanFull.value) return "Plan completo";
   if (currentJoinStatus.value === "aceptada") return "Ya unido";
   if (currentJoinStatus.value === "pendiente") return "Solicitud enviada";
   return joining.value ? "Uniendo..." : "Unirme al plan";
 });
+const canRatePlan = computed(() => Boolean(ratingStatus.value?.canRate));
+const userRating = computed(() => ratingStatus.value?.userRating || null);
+const ratingsCount = computed(() => Number(ratingStatus.value?.ratingsCount || plan.value?.ratings_count || 0));
+const averageRating = computed(() => Number(ratingStatus.value?.averageRating ?? plan.value?.average_rating ?? 0));
+const averageRatingDisplay = computed(() => averageRating.value ? averageRating.value.toFixed(1) : "0.0");
+const showRatingsSection = computed(() => isPlanEnded.value || ratingsCount.value > 0);
+const ratingsCountText = computed(() => {
+  if (!ratingsCount.value) return "Todavía no hay valoraciones para este plan.";
+  return `${ratingsCount.value} valoración${ratingsCount.value === 1 ? "" : "es"} recibida${ratingsCount.value === 1 ? "" : "s"}.`;
+});
+const ratingFormTitle = computed(() =>
+  userRating.value ? "Puedes actualizar tu valoración si quieres reflejar mejor la experiencia." : "Como participaste en este plan, ya puedes valorarlo."
+);
 const distanceLabel = computed(() =>
   formatDistanceKm(
     calculateDistanceKm(userCoords.value, {
@@ -239,10 +316,23 @@ const distanceLabel = computed(() =>
     })
   )
 );
+
+function openHostProfile() {
+  if (isOwnPlan.value) {
+    router.push("/perfil");
+    return;
+  }
+
+  const hostId = Number(plan.value?.host_id ?? plan.value?.id_usuario);
+  if (!hostId) return;
+  router.push(`/perfil/${hostId}`);
+}
 async function handleJoin() {
   if (isJoinDisabled.value) {
     if (isOwnPlan.value) {
       showToast("⚠️ No puedes unirte a un plan creado por ti");
+    } else if (isPlanEnded.value) {
+      showToast("⚠️ Este plan ya ha finalizado");
     } else if (isPlanFull.value) {
       showToast("⚠️ Este plan ya está completo");
     } else if (currentJoinStatus.value === "pendiente") {
@@ -274,6 +364,21 @@ async function loadPlan() {
     withCredentials: true,
   });
   plan.value = data;
+}
+
+async function loadRatingStatus() {
+  try {
+    const data = await store.fetchRatingStatus(route.params.id);
+    ratingStatus.value = data;
+    if (data?.userRating) {
+      ratingForm.value = {
+        puntuacion: Number(data.userRating.puntuacion || 0),
+        comentario: data.userRating.comentario || "",
+      };
+    }
+  } catch (e) {
+    ratingStatus.value = { canRate: false, userRating: null, averageRating: plan.value?.average_rating || null, ratingsCount: plan.value?.ratings_count || 0 };
+  }
 }
 
 function initializeMap() {
@@ -340,6 +445,28 @@ async function updateSolicitud(id, estado) {
     showToast("⚠️ " + msg);
   } finally {
     processingSolicitudId.value = null;
+  }
+}
+
+async function submitRating() {
+  if (!ratingForm.value.puntuacion) {
+    showToast("⚠️ Elige una puntuación del 1 al 5");
+    return;
+  }
+
+  ratingSubmitting.value = true;
+  try {
+    await store.submitRating(route.params.id, {
+      puntuacion: ratingForm.value.puntuacion,
+      comentario: ratingForm.value.comentario,
+    });
+    await Promise.all([loadPlan(), loadRatingStatus(), store.fetchMisPlanes()]);
+    showToast("✅ Valoración guardada");
+  } catch (e) {
+    const msg = e?.response?.data?.message || "No se pudo guardar la valoración";
+    showToast("⚠️ " + msg);
+  } finally {
+    ratingSubmitting.value = false;
   }
 }
 
@@ -460,6 +587,18 @@ function formatRequestDate(d) {
   align-items: center;
   gap: 1rem;
   padding: 1.2rem 1.5rem;
+  width: 100%;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  text-align: left;
+}
+.host-section-clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.host-section-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 .host-details {
   display: flex;
@@ -479,6 +618,59 @@ function formatRequestDate(d) {
 
 .description-section {
   padding: 1rem 0 2rem;
+}
+.ratings-section {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.ratings-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+.ratings-average {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-pill);
+  background: rgba(244, 63, 94, 0.08);
+  color: var(--primary);
+  font-weight: 800;
+}
+.ratings-average-value {
+  font-size: 1.2rem;
+}
+.ratings-average-stars {
+  font-size: 1rem;
+}
+.rating-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.rating-stars {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.rating-star-btn {
+  border: none;
+  background: transparent;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #cbd5e1;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+.rating-star-btn:hover {
+  transform: scale(1.08);
+}
+.rating-star-btn.active {
+  color: #f59e0b;
 }
 .location-map-section {
   padding: 1.5rem;

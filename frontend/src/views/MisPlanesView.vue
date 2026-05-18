@@ -141,6 +141,13 @@
                   <button v-if="plan.tipo === 'hosting'" class="btn-manage" @click.stop="$router.push(`/planes/${plan.id}`)">
                     Gestionar solicitudes
                   </button>
+                  <button
+                    v-else-if="plan.tipo === 'aceptada' && isPastPlan(plan)"
+                    class="btn-manage"
+                    @click.stop="openRatingModal(plan)"
+                  >
+                    Valorar plan
+                  </button>
                   <button v-else-if="plan.tipo === 'favorito'" class="btn-chat" @click.stop="$router.push(`/planes/${plan.id}`)">
                     <span class="material-symbols-outlined text-lg">favorite</span> Ver plan
                   </button>
@@ -158,6 +165,65 @@
 
       </div>
     </main>
+
+    <Transition name="modal-fade">
+      <div v-if="ratingModalOpen" class="rating-modal-backdrop" @click="closeRatingModal">
+        <div class="rating-modal card" @click.stop>
+          <div class="rating-modal-header">
+            <div>
+              <p class="section-label">Valorar plan</p>
+              <h3 class="rating-modal-title">{{ selectedPlanForRating?.titulo || "Tu experiencia" }}</h3>
+            </div>
+            <button class="rating-modal-close" type="button" @click="closeRatingModal">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+
+          <p class="text-muted">
+            Marca con corazones cómo fue el plan y añade el comentario que quieras.
+          </p>
+
+          <div class="rating-hearts">
+            <button
+              v-for="heart in 5"
+              :key="heart"
+              type="button"
+              class="rating-heart-btn"
+              :class="{ active: heart <= ratingForm.puntuacion }"
+              @click="ratingForm.puntuacion = heart"
+            >
+              <i :class="heart <= ratingForm.puntuacion ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
+            </button>
+          </div>
+
+          <textarea
+            v-model="ratingForm.comentario"
+            class="form-textarea"
+            placeholder="Escribe aquí qué te pareció el plan"
+          ></textarea>
+
+          <p
+            v-if="ratingModalMessage"
+            class="text-sm"
+            :class="ratingModalMessage.startsWith('✅') ? 'text-primary' : 'text-muted'"
+          >
+            {{ ratingModalMessage }}
+          </p>
+
+          <div class="rating-modal-actions">
+            <button class="btn btn-ghost" type="button" @click="closeRatingModal">Cancelar</button>
+            <button
+              class="btn btn-primary"
+              type="button"
+              :disabled="ratingSubmitting || !ratingForm.puntuacion"
+              @click="submitRatingModal"
+            >
+              {{ ratingSubmitting ? "Guardando..." : "Guardar valoración" }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -173,6 +239,11 @@ const router = useRouter();
 const drawerOpen = ref(false);
 const tab = ref("upcoming");
 const loading = ref(false);
+const ratingModalOpen = ref(false);
+const ratingSubmitting = ref(false);
+const ratingModalMessage = ref("");
+const selectedPlanForRating = ref(null);
+const ratingForm = ref({ puntuacion: 0, comentario: "" });
 
 onMounted(async () => {
   loading.value = true;
@@ -204,14 +275,12 @@ const allPlanes = computed(() =>
 );
 
 const filteredPlanes = computed(() => {
-  const now = new Date();
   return allPlanes.value.filter((p) => {
-    const fecha = p.fecha_plan ? new Date(p.fecha_plan) : null;
     if (tab.value === "favorites") return true;
-    if (tab.value === "hosting") return p.tipo === "hosting";
-    if (tab.value === "pending") return p.tipo === "pendiente";
-    if (tab.value === "past") return fecha && fecha < now;
-    if (tab.value === "upcoming") return !fecha || fecha >= now;
+    if (tab.value === "hosting") return p.tipo === "hosting" && !isPastPlan(p);
+    if (tab.value === "pending") return p.tipo === "pendiente" && !isPastPlan(p);
+    if (tab.value === "past") return isPastPlan(p);
+    if (tab.value === "upcoming") return !isPastPlan(p);
     return true;
   });
 });
@@ -219,11 +288,7 @@ const filteredPlanes = computed(() => {
 const totalHosting = computed(() => userPlans.value.filter((p) => p.tipo === "hosting").length);
 const totalPending = computed(() => userPlans.value.filter((p) => p.tipo === "pendiente").length);
 const totalUpcoming = computed(() => {
-  const now = new Date();
-  return userPlans.value.filter((p) => {
-    const fecha = p.fecha_plan ? new Date(p.fecha_plan) : null;
-    return !fecha || fecha >= now;
-  }).length;
+  return userPlans.value.filter((p) => !isPastPlan(p)).length;
 });
 
 function spotsFilled(plan) {
@@ -235,6 +300,62 @@ function maxAsistentes(plan) {
 
 function openPlan(plan) {
   router.push(`/planes/${plan.id}`);
+}
+
+async function openRatingModal(plan) {
+  selectedPlanForRating.value = plan;
+  ratingModalOpen.value = true;
+  ratingSubmitting.value = false;
+  ratingModalMessage.value = "";
+  ratingForm.value = { puntuacion: 0, comentario: "" };
+
+  try {
+    const data = await store.fetchRatingStatus(plan.id);
+    if (data?.userRating) {
+      ratingForm.value = {
+        puntuacion: Number(data.userRating.puntuacion || 0),
+        comentario: data.userRating.comentario || "",
+      };
+    }
+  } catch (e) {
+    ratingModalMessage.value = "No se pudo cargar tu valoración anterior.";
+  }
+}
+
+function closeRatingModal() {
+  ratingModalOpen.value = false;
+  ratingSubmitting.value = false;
+  ratingModalMessage.value = "";
+  selectedPlanForRating.value = null;
+  ratingForm.value = { puntuacion: 0, comentario: "" };
+}
+
+async function submitRatingModal() {
+  if (!selectedPlanForRating.value?.id || !ratingForm.value.puntuacion) return;
+
+  ratingSubmitting.value = true;
+  ratingModalMessage.value = "";
+  try {
+    await store.submitRating(selectedPlanForRating.value.id, {
+      puntuacion: ratingForm.value.puntuacion,
+      comentario: ratingForm.value.comentario,
+    });
+    ratingModalMessage.value = "✅ Valoración guardada";
+    await store.fetchMisPlanes();
+    setTimeout(() => {
+      closeRatingModal();
+    }, 700);
+  } catch (e) {
+    const msg = e?.response?.data?.message || "No se pudo guardar la valoración";
+    ratingModalMessage.value = `⚠️ ${msg}`;
+  } finally {
+    ratingSubmitting.value = false;
+  }
+}
+
+function isPastPlan(plan) {
+  if (!plan?.fecha_plan) return false;
+  return new Date(plan.fecha_plan) < new Date();
 }
 
 function tipoBadgeClass(tipo) {
@@ -444,6 +565,96 @@ function formatDate(d) {
   border: none; cursor: not-allowed;
 }
 
+.rating-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.52);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1200;
+}
+
+.rating-modal {
+  width: min(100%, 540px);
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.rating-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rating-modal-title {
+  margin: 0.3rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.rating-modal-close {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: #f8dfe6;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.rating-hearts {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rating-heart-btn {
+  border: 0;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.rating-heart-btn:hover {
+  transform: scale(1.08);
+}
+
+.rating-heart-btn.active {
+  color: #f43f5e;
+}
+
+.rating-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
 @media (max-width: 768px) {
   .page-content.py-8 {
     padding-top: calc(76px + 1.25rem);
@@ -462,6 +673,10 @@ function formatDate(d) {
 
   .h-meta-top {
     flex-wrap: wrap;
+  }
+
+  .rating-modal {
+    padding: 1.1rem;
   }
 }
 

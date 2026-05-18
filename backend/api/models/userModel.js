@@ -52,11 +52,31 @@ export async function getPerfilById(id) {
   const [stats] = await connection.query(
     `SELECT
       (SELECT COUNT(*) FROM planes WHERE id_usuario = ?) AS planes_hosted,
-      (SELECT COUNT(*) FROM solicitudes WHERE id_solicitante = ? AND estado = 'aceptada') AS planes_joined`,
-    [id, id]
+      (SELECT COUNT(*) FROM solicitudes WHERE id_solicitante = ? AND estado = 'aceptada') AS planes_joined,
+      (SELECT ROUND(AVG(vp.puntuacion), 1)
+       FROM valoraciones_planes vp
+       JOIN planes p ON p.id = vp.id_plan
+       WHERE p.id_usuario = ?) AS average_rating`,
+    [id, id, id]
   );
   user.stats = stats[0];
   return user;
+}
+
+export async function getHostedPlansByUserId(id) {
+  const [rows] = await connection.query(
+    `SELECT p.id, p.titulo, p.descripcion, p.max_asistentes, p.lat, p.lng, p.fecha_plan,
+            (SELECT fp.url FROM fotos_planes fp WHERE fp.id_plan = p.id ORDER BY fp.orden LIMIT 1) AS foto,
+            i.nombre AS interes,
+            (SELECT COUNT(*) FROM solicitudes s WHERE s.id_plan = p.id AND s.estado = 'aceptada') AS spots_filled,
+            'hosting' AS tipo
+     FROM planes p
+     JOIN intereses i ON i.id = p.id_interes
+     WHERE p.id_usuario = ?
+     ORDER BY p.fecha_plan ASC, p.fecha_creacion DESC`,
+    [id]
+  );
+  return rows;
 }
 
 export async function subirFotoUsuario(id_usuario, filename) {

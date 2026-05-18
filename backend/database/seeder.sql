@@ -63,7 +63,7 @@ INSERT INTO fotos_usuarios (id_usuario, url, orden) VALUES
 (12, 'https://picsum.photos/seed/nati2/400/500',  1);
 
 -- ======================================
--- PLANES (21 planes de muestra)
+-- PLANES (1 plan por usuario y por cada dia de mayo de 2026)
 -- IDs de intereses de referencia del init.sql:
 --   1=Senderismo, 2=Running, 3=Ciclismo, 4=Yoga, 5=Futbol
 --   6=Padel, 7=Escalada, 8=Surf, 9=Gym & Fitness, 10=Baile
@@ -74,165 +74,141 @@ INSERT INTO fotos_usuarios (id_usuario, url, orden) VALUES
 --   41=Viajes, 45=Playa, 47=Camping, 49=Roadtrips
 --   50=Discotecas, 51=Karaoke
 -- ======================================
-INSERT INTO planes (id_usuario, id_interes, titulo, descripcion, max_asistentes, lat, lng, fecha_plan) VALUES
-
--- Plan 1: Senderismo por la Pedriza
-(1, 1,  'Ruta por La Pedriza',
- 'Salida desde el aparcamiento de Canto Cochino. Haremos la ruta circular al Yelmo, unos 12 km. Nivel medio. Llevad agua y botas de monte.',
- 8, 40.72800000, -3.89600000, '2026-04-05 08:30:00'),
-
--- Plan 2: Brunch dominical
-(2, 19, 'Brunch en Malasana',
- 'Quedamos en Madre (Calle Padre Damian) para un brunch tranquilo de domingo. Reservo mesa para 4-5 personas. Sin prisa!',
- 6, 40.43200000, -3.70100000, '2026-04-06 11:30:00'),
-
--- Plan 3: Padel
-(3, 6,  'Padel en Chamartin',
- '2 pistas reservadas en Club Chamartin. Somos 2, buscamos 2 mas para completar. Nivel intermedio. Duracion: 1h30.',
- 4, 40.45300000, -3.68700000, '2026-04-02 19:00:00'),
-
--- Plan 4: Museos Barcelona
-(4, 26, 'Tarde en el MACBA y el CCCB',
- 'Visita a las exposiciones temporales de ambos espacios. Despues tomamos algo en el Raval. Duracion aprox. 3 horas.',
- 8, 41.38300000,  2.16600000, '2026-04-10 16:00:00'),
-
--- Plan 5: Ruta ciclista
-(5, 3,  'Ruta ciclista por la Albufera',
- 'Salida en bici desde Valencia centro hasta el lago de la Albufera. Unos 25 km de ida y vuelta por carril bici. Nivel facil-medio.',
- 10, 39.32500000, -0.35700000, '2026-04-12 09:00:00'),
-
--- Plan 6: Taller de pintura
-(6, 29, 'Taller de acuarela en Sevilla',
- 'Taller para principiantes en el Barrio de Santa Cruz. Todo el material incluido (5EUR pp). Aprendemos tecnicas basicas de acuarela.',
- 12, 37.38600000, -5.99200000, '2026-04-08 17:30:00'),
-
--- Plan 7: Running
-(7, 2,  'Entreno running por el Parque del Retiro',
- 'Salida de 10 km por el carril del Retiro. Ritmo 5:30/km aprox. Quedamos en la puerta de Alcala a las 7:15.',
- 8, 40.41500000, -3.68400000, '2026-04-03 07:15:00'),
-
--- Plan 8: Surf
-(8, 8,  'Surf en Conil de la Frontera',
- 'Surf para principiantes y nivel medio. Alquiler de tablas en la playa de Los Bateles. Instructor incluido (20EUR pp). El mar esta genial!',
- 6, 36.27400000, -6.08500000, '2026-04-19 10:00:00'),
-
--- Plan 9: Rol D&D
-(9, 38, 'Sesion de D&D - Campana nueva',
- 'Arrancamos campana nueva para gente que quiera jugar a D&D. DM con experiencia. Se valorara conocer las reglas basicas, pero no es obligatorio.',
- 6, 40.41800000, -3.69400000, '2026-04-04 18:00:00'),
-
--- Plan 10: Escape Room
-(10, 35, 'Escape Room en Barcelona',
- 'Somos 3, buscamos 1-2 mas. Sala "El Laberinto del Tiempo" en Zero Escape (Carrer de Provenca). Nivel avanzado. Precio ~18EUR pp.',
- 5, 41.39500000,  2.16100000, '2026-04-11 20:00:00'),
-
--- Plan 11: Cata vinos
-(11, 15, 'Cata de vinos de La Rioja',
- 'Cata comentada de 6 vinos D.O. Rioja con maridaje de quesos. Organizo yo en casa. Maximo 8 personas. Aportacion 15EUR pp.',
- 8, 42.46472000, -2.44760000, '2026-04-25 20:30:00'),
-
--- Plan 12: Concierto
-(12, 27, 'Concierto indie-pop en el Joy Eslava',
- 'Vamos al concierto de Carino este sabado en Joy Eslava. Quedo antes en el bar de enfrente a las 22h. Entradas por separado.',
- 7, 40.41700000, -3.70800000, '2026-04-05 22:00:00'),
-
--- Plan 13: Yoga
-(2, 4,  'Yoga al amanecer en el Retiro',
- 'Sesion de yoga para dar la bienvenida al fin de semana. Lleva tu esterilla. Nivel: todos los niveles. Despues un desayuno en el kiosco.',
- 10, 40.41500000, -3.68100000, '2026-04-06 08:00:00'),
-
--- Plan 14: Sushi
-(7, 17, 'Sushi lovers - mesa para 4',
- 'Mesa reservada en Kappou (Ctra. de las Palmas) en Malaga. Pedimos omakase para la mesa. Precio aprox. 30-40EUR pp.',
- 4, 36.71200000, -4.43100000, '2026-04-18 21:00:00'),
-
--- Plan 15: Karaoke
-(10, 51, 'Karaoke noche en Gracia',
- 'Somos 2 y buscamos mas gente animada para karaoke en El Karaoke Bar (Carrer Verdi). Empezamos a las 22h y cerramos el local.',
- 12, 41.40200000,  2.15700000, '2026-04-17 22:00:00'),
-
--- Plan 16: Cita hetero cafe
-(1, 13, 'Cafe y paseo por el Retiro',
- 'Plan tranquilo para conocernos con un cafe de especialidad y paseo sin prisas por el Retiro. Solo una persona mas para que sea una cita de verdad.',
- 2, 40.41580000, -3.68460000, '2026-05-03 17:30:00'),
-
--- Plan 17: Cita hetero brunch
-(2, 19, 'Brunch para dos en Chamberi',
- 'He reservado mesa para dos en una cafeteria bonita de Chamberi. Me apetece una conversacion agradable y descubrir a alguien interesante.',
- 2, 40.43420000, -3.70350000, '2026-05-04 11:00:00'),
-
--- Plan 18: Cita bi vinos
-(3, 15, 'Vinos naturales y charla por Lavapies',
- 'Busco una persona para compartir una cata informal de vinos naturales y alargar luego con una caminata por el barrio.',
- 2, 40.40890000, -3.69970000, '2026-05-05 20:00:00'),
-
--- Plan 19: Cita bi atardecer
-(8, 45, 'Atardecer y paseo por la playa de Cadiz',
- 'Me apetece conocer a alguien con energia bonita para ver el atardecer, caminar por la orilla y tomar algo despues.',
- 2, 36.52980000, -6.29510000, '2026-05-10 19:45:00'),
-
--- Plan 20: Cita homosexual museo
-(4, 26, 'Museo y cafe en Barcelona para dos',
- 'Plan de tarde para visitar una expo, comentar lo que vemos y terminar con un cafe. Solo una plaza para mantenerlo en formato cita.',
- 2, 41.38740000, 2.16860000, '2026-05-08 18:00:00'),
-
--- Plan 21: Cita homosexual cena
-(11, 22, 'Cena casera y vino en Logrono',
- 'Preparare una cena sencilla en casa con buen vino y musica suave. Busco una conversacion autentica y una noche relajada entre dos.',
- 2, 42.46610000, -2.44910000, '2026-05-12 21:00:00');
+INSERT INTO planes (id_usuario, id_interes, titulo, descripcion, max_asistentes, lat, lng, fecha_plan)
+WITH RECURSIVE dias AS (
+  SELECT 1 AS dia
+  UNION ALL
+  SELECT dia + 1 FROM dias WHERE dia < 31
+)
+SELECT
+  u.id,
+  CASE u.id
+    WHEN 1 THEN 1
+    WHEN 2 THEN 19
+    WHEN 3 THEN 6
+    WHEN 4 THEN 26
+    WHEN 5 THEN 3
+    WHEN 6 THEN 29
+    WHEN 7 THEN 2
+    WHEN 8 THEN 8
+    WHEN 9 THEN 38
+    WHEN 10 THEN 35
+    WHEN 11 THEN 15
+    WHEN 12 THEN 27
+  END AS id_interes,
+  CASE u.id
+    WHEN 1 THEN 'Ruta por La Pedriza'
+    WHEN 2 THEN 'Brunch en Malasana'
+    WHEN 3 THEN 'Padel en Chamartin'
+    WHEN 4 THEN 'Tarde de museos en Barcelona'
+    WHEN 5 THEN 'Ruta ciclista por Valencia'
+    WHEN 6 THEN 'Taller de acuarela en Sevilla'
+    WHEN 7 THEN 'Running al amanecer'
+    WHEN 8 THEN 'Surf en Cadiz'
+    WHEN 9 THEN 'Sesion de juegos de mesa'
+    WHEN 10 THEN 'Escape Room en Barcelona'
+    WHEN 11 THEN 'Cata de vinos en Logrono'
+    WHEN 12 THEN 'Concierto y paseo por Madrid'
+  END AS titulo,
+  CASE u.id
+    WHEN 1 THEN 'Salida desde el aparcamiento de Canto Cochino. Haremos una ruta por naturaleza y luego tomamos algo. Plan relajado y con buen ambiente.'
+    WHEN 2 THEN 'Quedamos para desayunar tarde, charlar sin prisa y conocer gente maja. Ambiente tranquilo y mesa reservada.'
+    WHEN 3 THEN 'Partido amistoso de padel con buen rollo. Nivel intermedio y ganas de echar unas risas.'
+    WHEN 4 THEN 'Recorremos una expo y despues comentamos la visita con un cafe cerca del centro.'
+    WHEN 5 THEN 'Salida en bici con ritmo comodo y parada para cafe a mitad del recorrido.'
+    WHEN 6 THEN 'Sesion creativa para pintar, aprender tecnicas basicas y pasar una tarde agradable.'
+    WHEN 7 THEN 'Entreno suave para arrancar el dia con energia y buena conversacion al terminar.'
+    WHEN 8 THEN 'Quedada para surfear, practicar equilibrio y aprovechar el buen tiempo junto al mar.'
+    WHEN 9 THEN 'Tarde de juegos y estrategia con gente nueva. Ideal para hablar y reirse un rato.'
+    WHEN 10 THEN 'Plan divertido para resolver pistas en equipo y luego comentar la jugada tomando algo.'
+    WHEN 11 THEN 'Cata informal con varios vinos y algo de picoteo para compartir impresiones.'
+    WHEN 12 THEN 'Quedamos antes del concierto para conocernos y despues alargamos la noche con un paseo.'
+  END AS descripcion,
+  CASE u.id
+    WHEN 1 THEN 8
+    WHEN 2 THEN 6
+    WHEN 3 THEN 4
+    WHEN 4 THEN 8
+    WHEN 5 THEN 10
+    WHEN 6 THEN 12
+    WHEN 7 THEN 8
+    WHEN 8 THEN 6
+    WHEN 9 THEN 6
+    WHEN 10 THEN 5
+    WHEN 11 THEN 8
+    WHEN 12 THEN 7
+  END AS max_asistentes,
+  CASE u.id
+    WHEN 1 THEN 40.72800000
+    WHEN 2 THEN 40.43200000
+    WHEN 3 THEN 40.45300000
+    WHEN 4 THEN 41.38300000
+    WHEN 5 THEN 39.32500000
+    WHEN 6 THEN 37.38600000
+    WHEN 7 THEN 36.72100000
+    WHEN 8 THEN 36.52700000
+    WHEN 9 THEN 40.41800000
+    WHEN 10 THEN 41.39500000
+    WHEN 11 THEN 42.46472000
+    WHEN 12 THEN 40.41700000
+  END AS lat,
+  CASE u.id
+    WHEN 1 THEN -3.89600000
+    WHEN 2 THEN -3.70100000
+    WHEN 3 THEN -3.68700000
+    WHEN 4 THEN 2.16600000
+    WHEN 5 THEN -0.35700000
+    WHEN 6 THEN -5.99200000
+    WHEN 7 THEN -4.42100000
+    WHEN 8 THEN -6.28900000
+    WHEN 9 THEN -3.69400000
+    WHEN 10 THEN 2.16100000
+    WHEN 11 THEN -2.44760000
+    WHEN 12 THEN -3.70800000
+  END AS lng,
+  TIMESTAMP(
+    DATE(CONCAT('2026-05-', LPAD(dias.dia, 2, '0'))),
+    MAKETIME(
+      8 + MOD(u.id + dias.dia, 13),
+      MOD((u.id * 7 + dias.dia * 5), 4) * 15,
+      0
+    )
+  ) AS fecha_plan
+FROM usuarios u
+CROSS JOIN dias
+WHERE u.rol = 'usuario';
 
 -- ======================================
 -- FOTOS PLANES
 -- ======================================
-INSERT INTO fotos_planes (id_plan, url, orden) VALUES
--- Plan 1: Senderismo
-(1,  'https://picsum.photos/seed/hike1/600/400',    0),
-(1,  'https://picsum.photos/seed/hike2/600/400',    1),
--- Plan 2: Brunch
-(2,  'https://picsum.photos/seed/brunch1/600/400',  0),
--- Plan 3: Padel
-(3,  'https://picsum.photos/seed/padel1/600/400',   0),
--- Plan 4: Museos
-(4,  'https://picsum.photos/seed/museo1/600/400',   0),
-(4,  'https://picsum.photos/seed/museo2/600/400',   1),
--- Plan 5: Ciclismo
-(5,  'https://picsum.photos/seed/bici1/600/400',    0),
--- Plan 6: Pintura
-(6,  'https://picsum.photos/seed/pintura1/600/400', 0),
-(6,  'https://picsum.photos/seed/pintura2/600/400', 1),
--- Plan 7: Running
-(7,  'https://picsum.photos/seed/run1/600/400',     0),
--- Plan 8: Surf
-(8,  'https://picsum.photos/seed/surf1/600/400',    0),
-(8,  'https://picsum.photos/seed/surf2/600/400',    1),
--- Plan 9: D&D
-(9,  'https://picsum.photos/seed/dnd1/600/400',     0),
--- Plan 10: Escape Room
-(10, 'https://picsum.photos/seed/escape1/600/400',  0),
--- Plan 11: Vinos
-(11, 'https://picsum.photos/seed/vino1/600/400',    0),
-(11, 'https://picsum.photos/seed/vino2/600/400',    1),
--- Plan 12: Concierto
-(12, 'https://picsum.photos/seed/concert1/600/400', 0),
--- Plan 13: Yoga
-(13, 'https://picsum.photos/seed/yoga1/600/400',    0),
--- Plan 14: Sushi
-(14, 'https://picsum.photos/seed/sushi1/600/400',   0),
-(14, 'https://picsum.photos/seed/sushi2/600/400',   1),
--- Plan 15: Karaoke
-(15, 'https://picsum.photos/seed/karaoke1/600/400', 0),
--- Plan 16: Cafe Retiro
-(16, 'https://picsum.photos/seed/citahetero1/600/400', 0),
--- Plan 17: Brunch Chamberi
-(17, 'https://picsum.photos/seed/citahetero2/600/400', 0),
--- Plan 18: Vinos Lavapies
-(18, 'https://picsum.photos/seed/citabi1/600/400', 0),
--- Plan 19: Atardecer Cadiz
-(19, 'https://picsum.photos/seed/citabi2/600/400', 0),
--- Plan 20: Museo Barcelona
-(20, 'https://picsum.photos/seed/citagay1/600/400', 0),
--- Plan 21: Cena Logrono
-(21, 'https://picsum.photos/seed/citagay2/600/400', 0);
+INSERT INTO fotos_planes (id_plan, url, orden)
+SELECT
+  p.id,
+  CONCAT(
+    'https://picsum.photos/seed/',
+    CASE p.id_usuario
+      WHEN 1 THEN 'ruta'
+      WHEN 2 THEN 'brunch'
+      WHEN 3 THEN 'padel'
+      WHEN 4 THEN 'museo'
+      WHEN 5 THEN 'bici'
+      WHEN 6 THEN 'pintura'
+      WHEN 7 THEN 'run'
+      WHEN 8 THEN 'surf'
+      WHEN 9 THEN 'juegos'
+      WHEN 10 THEN 'escape'
+      WHEN 11 THEN 'vino'
+      WHEN 12 THEN 'concierto'
+    END,
+    LPAD(DAY(p.fecha_plan), 2, '0'),
+    '/600/400'
+  ),
+  0
+FROM planes p
+JOIN usuarios u ON u.id = p.id_usuario
+WHERE u.rol = 'usuario'
+  AND YEAR(p.fecha_plan) = 2026
+  AND MONTH(p.fecha_plan) = 5;
 
 -- ======================================
 -- SOLICITUDES
@@ -252,16 +228,16 @@ INSERT INTO solicitudes (id_plan, id_solicitante, mensaje, estado) VALUES
 (3,  12, 'Me gustaria apuntarme. Hace tiempo que no juego pero me defiendo bien.', 'pendiente'),
 -- Plan 7 (Running de Miguel): Natalia pide -> aceptada
 (7,  12, 'Me apunto! Corro habitualmente ese ritmo. ?Quedamos 5 min antes?', 'aceptada'),
--- Plan 9 (D&D de Javier): Marta pide -> aceptada
-(9,  10, 'Me muero de ganas! He jugado un par de veces pero me falta experiencia.', 'aceptada'),
--- Plan 9 (D&D): Carlos pide -> pendiente
-(9,  5,  '?Hay sitio para un jugador de nivel medio? Conozco las reglas 5e.', 'pendiente'),
+-- Plan 9 (Juegos de mesa de Javier): Marta pide -> aceptada
+(9,  10, 'Me apetece mucho una tarde de juegos. Hace tiempo que no me junto con gente nueva para jugar.', 'aceptada'),
+-- Plan 9 (Juegos de mesa de Javier): Carlos pide -> pendiente
+(9,  5,  '?Hay sitio para alguien competitivo pero simpatico? Llevo un par de juegos para sumar al plan.', 'pendiente'),
 -- Plan 10 (Escape Room de Marta): Sofia pide -> rechazada
 (10, 4,  'Me interesan los escape rooms. ?Queda algun hueco?', 'rechazada'),
--- Plan 13 (Yoga de Lucia): Elena pide -> pendiente
-(13, 6,  'El yoga al amanecer en el Retiro suena perfecto. Me apunto.', 'pendiente'),
--- Plan 15 (Karaoke de Marta): Andrea pide -> aceptada
-(15, 8,  'Karaoke! Mi plan favorito. Alli estare si o si :D', 'aceptada');
+-- Plan 2 (Brunch de Lucia): Andrea pide -> pendiente
+(2, 8,  'Me apetece mucho ese brunch. Si queda hueco, me sumo encantada.', 'pendiente'),
+-- Plan 10 (Escape Room de Marta): Andrea pide -> aceptada
+(10, 8,  'Ese escape room me llama muchisimo. Si os falta una persona, contad conmigo.', 'aceptada');
 
 -- ======================================
 -- MENSAJES (en solicitudes aceptadas)
@@ -283,14 +259,14 @@ INSERT INTO mensajes (id_solicitud, id_emisor, mensaje) VALUES
 (7, 7,  'Hola Natalia! Perfecto. Quedamos 5 min antes en la estatua de Velazquez.'),
 (7, 12, 'Anotado. ?Hacemos el carril interior o exterior?'),
 (7, 7,  'Interior, es menos concurrido por las mananas.'),
--- Solicitud 8 (Marta -> D&D de Javier)
-(8, 9,  'Hola Marta! No te preocupes por la experiencia. Te explico todo el primer dia.'),
-(8, 10, 'Genial. ?Necesito traer dados o algo?'),
-(8, 9,  'Tengo sets de sobra. Solo trae ganas y algo de picar :)'),
--- Solicitud 12 (Andrea -> Karaoke de Marta)
-(12, 10, 'Yupi! Somos ya 4. Avisame si encuentras aparcamiento por Gracia que yo nunca encuentro.'),
-(12, 8,  'Jaja voy en metro. Linea 3, Fontana. ?Quedamos en la puerta a las 22h?'),
-(12, 10, 'Perfecto! Alli estare. Voy a calentar voz :D');
+-- Solicitud 8 (Marta -> Juegos de mesa de Javier)
+(8, 9,  'Hola Marta! Plan facil, ven con ganas de jugar y pasarlo bien.'),
+(8, 10, 'Perfecto. ?Llevo algun juego o preferis usar los que ya teneis?'),
+(8, 9,  'Trae alguno si te apetece, pero con lo que tengo vamos sobrados.'),
+-- Solicitud 12 (Andrea -> Escape Room de Marta)
+(12, 10, 'Perfecto Andrea! Ya somos el equipo completo para la sesion de la tarde.'),
+(12, 8,  'Genial. Llego con tiempo y os espero en la puerta para entrar juntos.'),
+(12, 10, 'Planazo. Luego comentamos las pruebas con algo de beber cerca.');
 
 -- ======================================
 -- NOTIFICACIONES
@@ -318,19 +294,19 @@ INSERT INTO notificaciones (id_usuario, id_solicitud, tipo) VALUES
 (7, 7, 'recibida'),
 -- Natalia recibe que fue aceptada al running
 (12, 7, 'aceptada'),
--- Javier recibe solicitud de Marta para D&D
+-- Javier recibe solicitud de Marta para juegos de mesa
 (9, 8, 'recibida'),
--- Marta recibe que fue aceptada al D&D
+-- Marta recibe que fue aceptada a juegos de mesa
 (10, 8, 'aceptada'),
--- Javier recibe solicitud de Carlos para D&D
+-- Javier recibe solicitud de Carlos para juegos de mesa
 (9, 9, 'recibida'),
--- Marta recibe que Sofia fue rechazada a su escape room
+-- Sofia recibe que fue rechazada al escape room
 (4, 10, 'rechazada'),
--- Lucia recibe solicitud de Elena para yoga
+-- Lucia recibe solicitud de Andrea para brunch
 (2, 11, 'recibida'),
--- Marta recibe solicitud de Andrea para karaoke
+-- Marta recibe solicitud de Andrea para su escape room
 (10, 12, 'recibida'),
--- Andrea recibe que fue aceptada al karaoke
+-- Andrea recibe que fue aceptada al escape room
 (8, 12, 'aceptada');
 
 -- ======================================
@@ -342,5 +318,5 @@ INSERT INTO favoritos (id_usuario, id_plan) VALUES
 (2, 1),
 (3, 9),
 (4, 10),
-(8, 15),
+(8, 10),
 (12, 3);
