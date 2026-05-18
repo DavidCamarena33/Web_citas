@@ -16,7 +16,15 @@ export const usePlanesStore = defineStore('planes', {
         typeof options === 'string'
           ? { orientacion: options }
           : options || {};
-      const { orientacion = 'all', modalidad = null } = normalizedOptions;
+      const {
+        orientacion = 'all',
+        modalidad = null,
+        radio = null,
+        lat = null,
+        lng = null,
+        fecha_desde = null,
+        fecha_hasta = null,
+      } = normalizedOptions;
 
       this.loading = true;
       try {
@@ -25,6 +33,11 @@ export const usePlanesStore = defineStore('planes', {
           params: {
             ...(orientacion && orientacion !== 'all' ? { orientacion } : {}),
             ...(modalidad ? { modalidad } : {}),
+            ...(radio ? { radio } : {}),
+            ...(radio && lat ? { lat } : {}),
+            ...(radio && lng ? { lng } : {}),
+            ...(fecha_desde ? { fecha_desde } : {}),
+            ...(fecha_hasta ? { fecha_hasta } : {}),
           },
         });
         this.planes = data;

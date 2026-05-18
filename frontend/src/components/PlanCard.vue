@@ -1,5 +1,10 @@
 <template>
-  <div class="plan-card" @click="$emit('click', plan)">
+  <div
+    class="plan-card"
+    @click="$emit('click', plan)"
+    @mouseenter="$emit('hover', plan.id)"
+    @mouseleave="$emit('hover', null)"
+  >
     <div class="pc-img-wrap">
       <img
         v-if="plan.foto"
@@ -63,7 +68,7 @@ const props = defineProps({
   joinStatus: { type: String, default: "" },
   isFavorite: { type: Boolean, default: false },
 });
-defineEmits(["click", "join", "toggle-favorite"]);
+defineEmits(["click", "join", "toggle-favorite", "hover"]);
 
 const authStore = useAuthStore();
 

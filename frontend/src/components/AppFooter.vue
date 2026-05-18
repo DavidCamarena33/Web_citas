@@ -14,6 +14,10 @@
       </div>
 
       <div class="footer-links">
+        <a href="/docs/politica-privacidad.pdf" target="_blank" download>
+          <span class="material-symbols-outlined" style="font-size:0.9rem;vertical-align:middle">description</span>
+          Política de privacidad
+        </a>
         <a href="mailto:hola@linkandplan.social">soporte@linkandplan.social</a>
         <a href="mailto:colabs@linkandplan.social">colabs@linkandplan.social</a>
         <a href="https://instagram.com/linkandplan.social" target="_blank" rel="noreferrer">

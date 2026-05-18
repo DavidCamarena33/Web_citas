@@ -6,15 +6,27 @@ export async function listarPlanes(req, res, next) {
   try {
     const orientacion = req.query.orientacion;
     const modalidad = req.query.modalidad;
+    const radio = req.query.radio;
+    const userLat = req.query.lat;
+    const userLng = req.query.lng;
+    const fechaDesde = req.query.fecha_desde || null;
+    const fechaHasta = req.query.fecha_hasta || null;
+
     const hostOrientation =
       orientacion && orientacion !== 'all' ? orientacion : null;
     const capacityMode =
       modalidad === 'pareja' || modalidad === 'grupo' ? modalidad : null;
+    const radioKm = radio ? Number(radio) : null;
 
     const planes = await getPlanes({
       excludeUserId: req.id,
       hostOrientation,
       capacityMode,
+      lat: radioKm ? userLat : null,
+      lng: radioKm ? userLng : null,
+      radio: radioKm,
+      fechaDesde,
+      fechaHasta,
     });
     const planesConFoto = planes.map(p => ({
       ...p,
