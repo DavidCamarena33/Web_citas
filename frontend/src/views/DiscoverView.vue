@@ -58,7 +58,7 @@
           </button>
         </div>
       </section>
-
+ 
     </main>
     <!-- FAB -->
     <button class="fab" @click="$router.push('/crear-plan')" title="Crear plan">
