@@ -320,3 +320,35 @@ INSERT INTO favoritos (id_usuario, id_plan) VALUES
 (4, 10),
 (8, 10),
 (12, 3);
+
+-- ======================================
+-- PLANES ADICIONALES DE PRUEBA
+-- ======================================
+
+-- Plan A: Pareja - Pablo invita, Andrea acepta, con conversacion
+INSERT INTO planes (id_usuario, id_interes, titulo, descripcion, max_asistentes, lat, lng, fecha_plan) VALUES
+(3, 18, 'Cena italiana en Malasana', 'Cena tranquila en una trattoria autentica. Busco a alguien con quien compartir buena conversacion y mejor pasta.', 2, 40.42700000, -3.70200000, '2026-05-25 20:30:00');
+
+-- Plan B: Para probar flujo de reserva - Andrea crea plan en Madrid con huecos
+INSERT INTO planes (id_usuario, id_interes, titulo, descripcion, max_asistentes, lat, lng, fecha_plan) VALUES
+(8, 26, 'Exposicion inmersiva en Matadero', 'Nueva expo interactiva en Matadero Madrid. Ideal para descubrir arte contemporaneo y charlar despues con un cafe.', 6, 40.39200000, -3.69700000, '2026-05-28 17:00:00');
+
+-- Fotos para los nuevos planes
+INSERT INTO fotos_planes (id_plan, url, orden) VALUES
+(373, 'https://picsum.photos/seed/cena372/600/400', 0),
+(374, 'https://picsum.photos/seed/expo373/600/400', 0);
+
+-- Andrea solicita unirse al plan de cena de Pablo -> aceptada
+INSERT INTO solicitudes (id_plan, id_solicitante, mensaje, estado) VALUES
+(373, 8, 'Me encanta la pasta! Justo andaba buscando un plan tranquilo para esa noche. Me apunto seguro.', 'aceptada');
+
+-- Conversacion entre Pablo y Andrea sobre la cena
+INSERT INTO mensajes (id_solicitud, id_emisor, mensaje) VALUES
+(13, 3, 'Hola Andrea! Me alegra que te hayas apuntado. Tengo reserva en Da Nicola a las 20:30.'),
+(13, 8, 'Perfecto! Me encanta la comida italiana. Voy vestida informal o mejor arreglada?'),
+(13, 3, 'Es un sitio con encanto pero sin etiqueta. Informal pero mona :)');
+
+-- Notificaciones
+INSERT INTO notificaciones (id_usuario, id_solicitud, tipo) VALUES
+(3, 13, 'recibida'),
+(8, 13, 'aceptada');

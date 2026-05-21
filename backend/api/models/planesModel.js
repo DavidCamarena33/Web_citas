@@ -21,10 +21,12 @@ export async function guardarFotosPlan(id_plan, urls) {
 export async function getPlanes({
   lat,
   lng,
-  radio = 50,
+  radio = null,
   excludeUserId = null,
   hostOrientation = null,
   capacityMode = null,
+  fechaDesde = null,
+  fechaHasta = null,
 } = {}) {
   const conditions = [];
   const params = [];
@@ -47,7 +49,28 @@ export async function getPlanes({
     conditions.push("p.max_asistentes > 2");
   }
 
-  conditions.push("(p.fecha_plan IS NULL OR p.fecha_plan >= NOW())");
+  if (lat && lng && radio) {
+    conditions.push(
+      "(6371 * ACOS(COS(RADIANS(?)) * COS(RADIANS(p.lat)) * COS(RADIANS(p.lng) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(p.lat)))) <= ?"
+    );
+    params.push(Number(lat), Number(lng), Number(lat), Number(radio));
+  }
+
+  if (fechaDesde) {
+    conditions.push("(p.fecha_plan IS NULL OR p.fecha_plan >= ?)");
+    params.push(fechaDesde);
+  } else if (fechaHasta) {
+    conditions.push("(p.fecha_plan IS NULL OR p.fecha_plan >= NOW())");
+    conditions.push("(p.fecha_plan IS NULL OR p.fecha_plan <= ?)");
+    params.push(fechaHasta);
+  } else {
+    conditions.push("(p.fecha_plan IS NULL OR p.fecha_plan >= NOW())");
+  }
+
+  if (fechaDesde && fechaHasta) {
+    conditions.push("(p.fecha_plan IS NULL OR p.fecha_plan <= ?)");
+    params.push(fechaHasta);
+  }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
