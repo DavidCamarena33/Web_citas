@@ -51,12 +51,22 @@ export async function getPerfilById(id) {
   return user;
 }
 
-export async function subirFotoUsuario(id_usuario, filename) {
-  const orden_max_result = await connection.query(
-    `SELECT COALESCE(MAX(orden), -1) + 1 AS next_orden FROM fotos_usuarios WHERE id_usuario = ?`,
-    [id_usuario]
-  );
-  const next_orden = orden_max_result[0][0].next_orden;
+export async function subirFotoUsuario(id_usuario, filename, principal = false) {
+  let next_orden = 0;
+
+  if (principal) {
+    await connection.query(
+      `UPDATE fotos_usuarios SET orden = orden + 1 WHERE id_usuario = ?`,
+      [id_usuario]
+    );
+  } else {
+    const orden_max_result = await connection.query(
+      `SELECT COALESCE(MAX(orden), -1) + 1 AS next_orden FROM fotos_usuarios WHERE id_usuario = ?`,
+      [id_usuario]
+    );
+    next_orden = orden_max_result[0][0].next_orden;
+  }
+
   const [result] = await connection.query(
     `INSERT INTO fotos_usuarios (id_usuario, url, orden) VALUES (?, ?, ?)`,
     [id_usuario, filename, next_orden]

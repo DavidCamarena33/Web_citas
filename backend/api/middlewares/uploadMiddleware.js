@@ -1,9 +1,12 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.resolve(__dirname, '..', '..', 'uploads');
 
-const uploadsDir = 'uploads';
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -14,7 +17,7 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+    cb(null, uniqueSuffix + path.extname(file.originalname).toLowerCase());
   },
 });
 
@@ -22,11 +25,15 @@ const fileFilter = (req, file, cb) => {
   const allowed = /jpeg|jpg|png|gif|webp/;
   const ext = allowed.test(path.extname(file.originalname).toLowerCase());
   const mime = allowed.test(file.mimetype);
+
   if (ext && mime) {
     cb(null, true);
-  } else {
-    cb(new Error('Solo se permiten imágenes (jpeg, jpg, png, gif, webp)'));
+    return;
   }
+
+  const error = new Error('Solo se permiten imagenes (jpeg, jpg, png, gif, webp)');
+  error.status = 400;
+  cb(error);
 };
 
 export const upload = multer({

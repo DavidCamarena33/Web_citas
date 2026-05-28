@@ -10,30 +10,32 @@
         </div>
 
         <template v-else>
-          <!-- Profile Header -->
           <div class="perfil-header card fade-in-up">
             <div class="perfil-cover"></div>
             <div class="perfil-info">
-              <!-- Avatar -->
               <div class="perfil-avatar-wrap">
-                <div
+                <button
+                  type="button"
                   class="avatar avatar-xl perfil-avatar"
+                  :disabled="uploading"
                   @click="triggerUpload"
+                  title="Cambiar foto principal"
                 >
                   <img
                     v-if="perfil.fotos && perfil.fotos.length"
                     :src="perfil.fotos[0]"
-                    alt="foto"
+                    alt="Foto principal"
+                    @error="removeBrokenPhoto(0)"
                   />
                   <span v-else>{{ initials }}</span>
-                  <div class="perfil-avatar-overlay">📷</div>
-                </div>
+                  <span class="perfil-avatar-overlay">Cambiar</span>
+                </button>
                 <input
                   ref="fileInput"
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
                   class="hidden-input"
-                  @change="uploadFoto"
+                  @change="uploadFoto($event, true)"
                 />
               </div>
 
@@ -43,7 +45,7 @@
                   }}<span class="perfil-age" v-if="edad">, {{ edad }}</span>
                 </h1>
                 <p class="text-muted text-sm">
-                  {{ perfil.direccion || "Ubicación no establecida" }}
+                  {{ perfil.direccion || "Ubicacion no establecida" }}
                 </p>
                 <button
                   class="btn btn-primary btn-sm location-btn"
@@ -53,7 +55,6 @@
                 </button>
               </div>
 
-              <!-- Stats -->
               <div class="perfil-stats">
                 <div class="stat-block">
                   <span class="stat-num">{{
@@ -70,22 +71,21 @@
                 </div>
                 <div class="stat-divider"></div>
                 <div class="stat-block">
-                  <span class="stat-num text-primary">⭐ 4.9</span>
-                  <span class="stat-label">Valoración</span>
+                  <span class="stat-num text-primary">4.9</span>
+                  <span class="stat-label">Valoracion</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Bio / Description -->
           <div class="card perfil-bio-card fade-in-up">
             <div class="perfil-bio-header">
-              <h3>Sobre mí</h3>
+              <h3>Sobre mi</h3>
               <button
                 class="btn btn-ghost btn-sm"
                 @click="editingBio = !editingBio"
               >
-                {{ editingBio ? "Cancelar" : "✏️ Editar" }}
+                {{ editingBio ? "Cancelar" : "Editar" }}
               </button>
             </div>
             <div v-if="editingBio">
@@ -103,11 +103,10 @@
               </button>
             </div>
             <p v-else class="text-muted">
-              {{ perfil.descripcion || "Sin descripción todavía." }}
+              {{ perfil.descripcion || "Sin descripcion todavia." }}
             </p>
           </div>
 
-          <!-- Photos -->
           <div
             class="card perfil-photos-card fade-in-up"
             v-if="perfil.fotos && perfil.fotos.length > 1"
@@ -116,27 +115,30 @@
             <div class="perfil-photos-grid">
               <img
                 v-for="(foto, i) in perfil.fotos"
-                :key="i"
+                :key="foto"
                 :src="foto"
-                :alt="'foto ' + i"
+                :alt="i === 0 ? 'Foto principal' : `Foto ${i + 1}`"
                 class="perfil-photo"
+                @error="removeBrokenPhoto(i)"
               />
             </div>
           </div>
 
-          <!-- More photos upload -->
           <div class="card perfil-addphoto-card fade-in-up">
             <h3>Agregar foto</h3>
-            <label class="photo-upload-label">
-              <input type="file" accept="image/*" @change="uploadFoto" />
-              <span>+ Subir foto</span>
+            <label class="photo-upload-label" :class="{ disabled: uploading }">
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                :disabled="uploading"
+                @change="uploadFoto($event, false)"
+              />
+              <span>{{ uploading ? "Subiendo..." : "+ Subir foto" }}</span>
             </label>
             <p
               v-if="uploadMsg"
               class="text-sm"
-              :class="
-                uploadMsg.startsWith('✅') ? 'text-primary' : 'text-muted'
-              "
+              :class="uploadMsg === 'Foto subida' ? 'text-primary' : 'text-muted'"
             >
               {{ uploadMsg }}
             </p>
@@ -156,6 +158,7 @@ import axios from "axios";
 
 const drawerOpen = ref(false);
 const loading = ref(false);
+const uploading = ref(false);
 const perfil = ref({ nombre: "", fotos: [], stats: {} });
 const editingBio = ref(false);
 const bioText = ref("");
@@ -163,6 +166,8 @@ const fileInput = ref(null);
 const uploadMsg = ref("");
 
 const API = "http://localhost:3000/api";
+const MAX_PHOTO_SIZE = 10 * 1024 * 1024;
+const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
 onMounted(async () => {
   loading.value = true;
@@ -200,23 +205,59 @@ function triggerUpload() {
   fileInput.value?.click();
 }
 
-async function uploadFoto(e) {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  uploadMsg.value = "⏳ Subiendo...";
+function removeBrokenPhoto(index) {
+  perfil.value.fotos = (perfil.value.fotos || []).filter((_, i) => i !== index);
+}
+
+function validatePhoto(file) {
+  if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+    return "Formato no permitido. Usa JPG, PNG, GIF o WEBP.";
+  }
+
+  if (file.size > MAX_PHOTO_SIZE) {
+    return "La foto no puede superar 10 MB.";
+  }
+
+  return "";
+}
+
+async function uploadFoto(e, principal = false) {
+  const input = e.target;
+  const file = input.files?.[0];
+  if (!file || uploading.value) return;
+
+  const error = validatePhoto(file);
+  if (error) {
+    uploadMsg.value = error;
+    input.value = "";
+    setTimeout(() => (uploadMsg.value = ""), 3000);
+    return;
+  }
+
+  uploading.value = true;
+  uploadMsg.value = "Subiendo...";
+
   const fd = new FormData();
   fd.append("foto", file);
+  fd.append("principal", String(principal));
+
   try {
     const { data } = await axios.post(`${API}/perfil/foto`, fd, {
       withCredentials: true,
-      headers: { "Content-Type": "multipart/form-data" },
     });
-    perfil.value.fotos = [...(perfil.value.fotos || []), data.url];
-    uploadMsg.value = "✅ Foto subida";
+
+    const currentPhotos = perfil.value.fotos || [];
+    perfil.value.fotos = principal
+      ? [data.url, ...currentPhotos]
+      : [...currentPhotos, data.url];
+    uploadMsg.value = "Foto subida";
   } catch (err) {
-    uploadMsg.value = "❌ Error al subir foto";
+    uploadMsg.value = err.response?.data?.error || "Error al subir foto";
+  } finally {
+    uploading.value = false;
+    input.value = "";
+    setTimeout(() => (uploadMsg.value = ""), 3000);
   }
-  setTimeout(() => (uploadMsg.value = ""), 3000);
 }
 
 async function saveBio() {
@@ -242,7 +283,6 @@ async function saveBio() {
   gap: 1.5rem;
 }
 
-/* Header card */
 .perfil-header {
   overflow: hidden;
 }
@@ -277,23 +317,31 @@ async function saveBio() {
   font-size: 2.2rem;
   font-weight: 700;
 }
+.perfil-avatar:disabled {
+  cursor: wait;
+  opacity: 0.8;
+}
 .perfil-avatar img {
   width: 100%;
   height: 100%;
+  display: block;
   object-fit: cover;
+  object-position: center;
   border-radius: 50%;
 }
 .perfil-avatar-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   transition: opacity var(--transition);
   border-radius: 50%;
-  font-size: 1.5rem;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 .perfil-avatar:hover .perfil-avatar-overlay {
   opacity: 1;
@@ -350,7 +398,6 @@ async function saveBio() {
   background: var(--card-border);
 }
 
-/* Bio */
 .perfil-bio-card {
   padding: 1.25rem;
   display: flex;
@@ -363,7 +410,6 @@ async function saveBio() {
   justify-content: space-between;
 }
 
-/* Photos */
 .perfil-photos-card {
   padding: 1.25rem;
   display: flex;
@@ -372,17 +418,19 @@ async function saveBio() {
 }
 .perfil-photos-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 0.75rem;
 }
 .perfil-photo {
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 4 / 5;
+  display: block;
   object-fit: cover;
+  object-position: center;
   border-radius: var(--radius-sm);
+  background: var(--primary-soft);
 }
 
-/* Add photo */
 .perfil-addphoto-card {
   padding: 1.25rem;
   display: flex;
@@ -392,6 +440,10 @@ async function saveBio() {
 .photo-upload-label {
   display: inline-flex;
   cursor: pointer;
+}
+.photo-upload-label.disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 .photo-upload-label input {
   display: none;

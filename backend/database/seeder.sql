@@ -134,7 +134,7 @@ INSERT INTO planes (id_usuario, id_interes, titulo, descripcion, max_asistentes,
 -- Plan 12: Concierto
 (12, 27, 'Concierto indie-pop en el Joy Eslava',
  'Vamos al concierto de Carino este sabado en Joy Eslava. Quedo antes en el bar de enfrente a las 22h. Entradas por separado.',
- 7, 40.41700000, -3.70800000, '2026-04-05 22:00:00'),
+ 7, 40.41700000, -3.70800000, '2026-04-05 22:00:00'), 
 
 -- Plan 13: Yoga
 (2, 4,  'Yoga al amanecer en el Retiro',
