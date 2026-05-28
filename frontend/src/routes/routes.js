@@ -24,6 +24,7 @@ const routes = [
   { path: '/mensajes', name: 'mensajes', component: MensajesView, meta: { requiresAuth: true } },
   { path: '/comunidades', name: 'comunidades', component: ComunidadesView, meta: { requiresAuth: true } },
   { path: '/perfil', name: 'perfil', component: PerfilUsuario, meta: { requiresAuth: true } },
+  { path: '/perfil/:id', name: 'perfil-publico', component: PerfilUsuario, meta: { requiresAuth: true } },
   { path: '/crear-plan', name: 'crear-plan', component: CrearPlanView, meta: { requiresAuth: true } },
   { path: '/planes/:id', name: 'plan-detail', component: PlanDetailView, meta: { requiresAuth: true } },
 ];

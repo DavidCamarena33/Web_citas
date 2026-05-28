@@ -9,6 +9,14 @@ export const getByEmail = async (email) => {
   return results;
 };
 
+export const getById = async (id) => {
+  const [[user]] = await connection.query(
+    "SELECT id, nombre, email, rol FROM usuarios WHERE id = ?",
+    [id],
+  );
+  return user || null;
+};
+
 export async function registro(nombre, email, edad ,contrasena, genero, orientacion) {
   const hashPass = await bcrypt.hash(contrasena, 10);
 
@@ -48,28 +56,89 @@ export async function getPerfilById(id) {
     [id, id]
   );
   user.stats = stats[0];
+
+  try {
+    const [[ratingStats]] = await connection.query(
+      `SELECT ROUND(AVG(vp.puntuacion), 1) AS average_rating
+       FROM valoraciones_planes vp
+       JOIN planes p ON p.id = vp.id_plan
+       WHERE p.id_usuario = ?`,
+      [id]
+    );
+    user.stats.average_rating = ratingStats?.average_rating || null;
+  } catch (err) {
+    if (err?.code !== "ER_NO_SUCH_TABLE") throw err;
+    user.stats.average_rating = null;
+  }
+
   return user;
 }
 
-export async function subirFotoUsuario(id_usuario, filename, principal = false) {
-  let next_orden = 0;
+export async function getHostedPlansByUserId(id_usuario) {
+  const selectBase = `SELECT p.id, p.titulo, p.descripcion, p.max_asistentes, p.lat, p.lng, p.fecha_plan, p.fecha_creacion,
+          (SELECT fp.url FROM fotos_planes fp WHERE fp.id_plan = p.id ORDER BY fp.orden LIMIT 1) AS foto,
+          i.nombre AS interes,
+          (SELECT COUNT(*) FROM solicitudes s WHERE s.id_plan = p.id AND s.estado = 'aceptada') AS spots_filled,`;
+  const fromBase = `FROM planes p
+     JOIN intereses i ON i.id = p.id_interes
+     WHERE p.id_usuario = ?
+     ORDER BY COALESCE(p.fecha_plan, p.fecha_creacion) DESC`;
 
-  if (principal) {
-    await connection.query(
-      `UPDATE fotos_usuarios SET orden = orden + 1 WHERE id_usuario = ?`,
+  try {
+    const [rows] = await connection.query(
+      `${selectBase}
+          (SELECT ROUND(AVG(vp.puntuacion), 1) FROM valoraciones_planes vp WHERE vp.id_plan = p.id) AS average_rating,
+          (SELECT COUNT(*) FROM valoraciones_planes vp WHERE vp.id_plan = p.id) AS ratings_count,
+          'hosting' AS tipo
+       ${fromBase}`,
       [id_usuario]
     );
-  } else {
-    const orden_max_result = await connection.query(
-      `SELECT COALESCE(MAX(orden), -1) + 1 AS next_orden FROM fotos_usuarios WHERE id_usuario = ?`,
+    return rows;
+  } catch (err) {
+    if (err?.code !== "ER_NO_SUCH_TABLE") throw err;
+    const [rows] = await connection.query(
+      `${selectBase}
+          NULL AS average_rating,
+          0 AS ratings_count,
+          'hosting' AS tipo
+       ${fromBase}`,
       [id_usuario]
     );
-    next_orden = orden_max_result[0][0].next_orden;
+    return rows;
   }
+}
+
+export async function subirFotoUsuario(id_usuario, filename) {
+  const orden_max_result = await connection.query(
+    `SELECT COALESCE(MAX(orden), -1) + 1 AS next_orden FROM fotos_usuarios WHERE id_usuario = ?`,
+    [id_usuario]
+  );
+  const next_orden = orden_max_result[0][0].next_orden;
 
   const [result] = await connection.query(
     `INSERT INTO fotos_usuarios (id_usuario, url, orden) VALUES (?, ?, ?)`,
     [id_usuario, filename, next_orden]
+  );
+  return result;
+}
+
+export async function actualizarFotoPrincipalUsuario(id_usuario, filename) {
+  const [[fotoPrincipal]] = await connection.query(
+    `SELECT id FROM fotos_usuarios WHERE id_usuario = ? ORDER BY orden ASC LIMIT 1`,
+    [id_usuario]
+  );
+
+  if (fotoPrincipal) {
+    const [result] = await connection.query(
+      `UPDATE fotos_usuarios SET url = ? WHERE id = ?`,
+      [filename, fotoPrincipal.id]
+    );
+    return result;
+  }
+
+  const [result] = await connection.query(
+    `INSERT INTO fotos_usuarios (id_usuario, url, orden) VALUES (?, ?, 0)`,
+    [id_usuario, filename]
   );
   return result;
 }

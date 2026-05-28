@@ -1,5 +1,10 @@
 <template>
-  <div class="plan-card" @click="$emit('click', plan)">
+  <div
+    class="plan-card"
+    @click="$emit('click', plan)"
+    @mouseenter="$emit('hover', plan.id)"
+    @mouseleave="$emit('hover', null)"
+  >
     <div class="pc-img-wrap">
       <img
         v-if="plan.foto"
@@ -10,9 +15,16 @@
       <div v-else class="pc-img pc-placeholder">
         <span class="material-symbols-outlined" style="font-size:3rem">join_inner</span>
       </div>
-      <div class="pc-fav-btn">
+      <button
+        class="pc-fav-btn"
+        :class="{ 'pc-fav-btn-active': isFavorite }"
+        type="button"
+        :aria-pressed="isFavorite"
+        :title="isFavorite ? 'Quitar de favoritos' : 'Guardar en favoritos'"
+        @click.stop="$emit('toggle-favorite', plan)"
+      >
         <span class="material-symbols-outlined" style="font-size: 1.125rem">favorite</span>
-      </div>
+      </button>
     </div>
 
     <div class="pc-body">
@@ -54,8 +66,9 @@ const props = defineProps({
   plan: { type: Object, required: true },
   maxSpots: { type: Number, default: 8 },
   joinStatus: { type: String, default: "" },
+  isFavorite: { type: Boolean, default: false },
 });
-defineEmits(["click", "join"]);
+defineEmits(["click", "join", "toggle-favorite", "hover"]);
 
 const authStore = useAuthStore();
 
@@ -162,6 +175,17 @@ function formatDate(d) {
   background: rgba(0, 0, 0, 0.2);
   color: #fff;
   backdrop-filter: blur(4px);
+  border: none;
+  transition: background 0.2s ease, transform 0.2s ease, color 0.2s ease;
+}
+
+.pc-fav-btn:hover {
+  transform: scale(1.05);
+}
+
+.pc-fav-btn-active {
+  background: rgba(244, 63, 94, 0.95);
+  color: #fff;
 }
 
 .pc-body {

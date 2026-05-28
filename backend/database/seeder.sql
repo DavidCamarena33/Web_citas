@@ -63,7 +63,7 @@ INSERT INTO fotos_usuarios (id_usuario, url, orden) VALUES
 (12, 'https://picsum.photos/seed/nati2/400/500',  1);
 
 -- ======================================
--- PLANES (15 planes de muestra)
+-- PLANES (1 plan por usuario y por cada dia de mayo de 2026)
 -- IDs de intereses de referencia del init.sql:
 --   1=Senderismo, 2=Running, 3=Ciclismo, 4=Yoga, 5=Futbol
 --   6=Padel, 7=Escalada, 8=Surf, 9=Gym & Fitness, 10=Baile
@@ -154,43 +154,34 @@ INSERT INTO planes (id_usuario, id_interes, titulo, descripcion, max_asistentes,
 -- ======================================
 -- FOTOS PLANES
 -- ======================================
-INSERT INTO fotos_planes (id_plan, url, orden) VALUES
--- Plan 1: Senderismo
-(1,  'https://picsum.photos/seed/hike1/600/400',    0),
-(1,  'https://picsum.photos/seed/hike2/600/400',    1),
--- Plan 2: Brunch
-(2,  'https://picsum.photos/seed/brunch1/600/400',  0),
--- Plan 3: Padel
-(3,  'https://picsum.photos/seed/padel1/600/400',   0),
--- Plan 4: Museos
-(4,  'https://picsum.photos/seed/museo1/600/400',   0),
-(4,  'https://picsum.photos/seed/museo2/600/400',   1),
--- Plan 5: Ciclismo
-(5,  'https://picsum.photos/seed/bici1/600/400',    0),
--- Plan 6: Pintura
-(6,  'https://picsum.photos/seed/pintura1/600/400', 0),
-(6,  'https://picsum.photos/seed/pintura2/600/400', 1),
--- Plan 7: Running
-(7,  'https://picsum.photos/seed/run1/600/400',     0),
--- Plan 8: Surf
-(8,  'https://picsum.photos/seed/surf1/600/400',    0),
-(8,  'https://picsum.photos/seed/surf2/600/400',    1),
--- Plan 9: D&D
-(9,  'https://picsum.photos/seed/dnd1/600/400',     0),
--- Plan 10: Escape Room
-(10, 'https://picsum.photos/seed/escape1/600/400',  0),
--- Plan 11: Vinos
-(11, 'https://picsum.photos/seed/vino1/600/400',    0),
-(11, 'https://picsum.photos/seed/vino2/600/400',    1),
--- Plan 12: Concierto
-(12, 'https://picsum.photos/seed/concert1/600/400', 0),
--- Plan 13: Yoga
-(13, 'https://picsum.photos/seed/yoga1/600/400',    0),
--- Plan 14: Sushi
-(14, 'https://picsum.photos/seed/sushi1/600/400',   0),
-(14, 'https://picsum.photos/seed/sushi2/600/400',   1),
--- Plan 15: Karaoke
-(15, 'https://picsum.photos/seed/karaoke1/600/400', 0);
+INSERT INTO fotos_planes (id_plan, url, orden)
+SELECT
+  p.id,
+  CONCAT(
+    'https://picsum.photos/seed/',
+    CASE p.id_usuario
+      WHEN 1 THEN 'ruta'
+      WHEN 2 THEN 'brunch'
+      WHEN 3 THEN 'padel'
+      WHEN 4 THEN 'museo'
+      WHEN 5 THEN 'bici'
+      WHEN 6 THEN 'pintura'
+      WHEN 7 THEN 'run'
+      WHEN 8 THEN 'surf'
+      WHEN 9 THEN 'juegos'
+      WHEN 10 THEN 'escape'
+      WHEN 11 THEN 'vino'
+      WHEN 12 THEN 'concierto'
+    END,
+    LPAD(DAY(p.fecha_plan), 2, '0'),
+    '/600/400'
+  ),
+  0
+FROM planes p
+JOIN usuarios u ON u.id = p.id_usuario
+WHERE u.rol = 'usuario'
+  AND YEAR(p.fecha_plan) = 2026
+  AND MONTH(p.fecha_plan) = 5;
 
 -- ======================================
 -- SOLICITUDES
@@ -210,16 +201,16 @@ INSERT INTO solicitudes (id_plan, id_solicitante, mensaje, estado) VALUES
 (3,  12, 'Me gustaria apuntarme. Hace tiempo que no juego pero me defiendo bien.', 'pendiente'),
 -- Plan 7 (Running de Miguel): Natalia pide -> aceptada
 (7,  12, 'Me apunto! Corro habitualmente ese ritmo. ?Quedamos 5 min antes?', 'aceptada'),
--- Plan 9 (D&D de Javier): Marta pide -> aceptada
-(9,  10, 'Me muero de ganas! He jugado un par de veces pero me falta experiencia.', 'aceptada'),
--- Plan 9 (D&D): Carlos pide -> pendiente
-(9,  5,  '?Hay sitio para un jugador de nivel medio? Conozco las reglas 5e.', 'pendiente'),
+-- Plan 9 (Juegos de mesa de Javier): Marta pide -> aceptada
+(9,  10, 'Me apetece mucho una tarde de juegos. Hace tiempo que no me junto con gente nueva para jugar.', 'aceptada'),
+-- Plan 9 (Juegos de mesa de Javier): Carlos pide -> pendiente
+(9,  5,  '?Hay sitio para alguien competitivo pero simpatico? Llevo un par de juegos para sumar al plan.', 'pendiente'),
 -- Plan 10 (Escape Room de Marta): Sofia pide -> rechazada
 (10, 4,  'Me interesan los escape rooms. ?Queda algun hueco?', 'rechazada'),
--- Plan 13 (Yoga de Lucia): Elena pide -> pendiente
-(13, 6,  'El yoga al amanecer en el Retiro suena perfecto. Me apunto.', 'pendiente'),
--- Plan 15 (Karaoke de Marta): Andrea pide -> aceptada
-(15, 8,  'Karaoke! Mi plan favorito. Alli estare si o si :D', 'aceptada');
+-- Plan 2 (Brunch de Lucia): Andrea pide -> pendiente
+(2, 8,  'Me apetece mucho ese brunch. Si queda hueco, me sumo encantada.', 'pendiente'),
+-- Plan 10 (Escape Room de Marta): Andrea pide -> aceptada
+(10, 8,  'Ese escape room me llama muchisimo. Si os falta una persona, contad conmigo.', 'aceptada');
 
 -- ======================================
 -- MENSAJES (en solicitudes aceptadas)
@@ -241,14 +232,14 @@ INSERT INTO mensajes (id_solicitud, id_emisor, mensaje) VALUES
 (7, 7,  'Hola Natalia! Perfecto. Quedamos 5 min antes en la estatua de Velazquez.'),
 (7, 12, 'Anotado. ?Hacemos el carril interior o exterior?'),
 (7, 7,  'Interior, es menos concurrido por las mananas.'),
--- Solicitud 8 (Marta -> D&D de Javier)
-(8, 9,  'Hola Marta! No te preocupes por la experiencia. Te explico todo el primer dia.'),
-(8, 10, 'Genial. ?Necesito traer dados o algo?'),
-(8, 9,  'Tengo sets de sobra. Solo trae ganas y algo de picar :)'),
--- Solicitud 12 (Andrea -> Karaoke de Marta)
-(12, 10, 'Yupi! Somos ya 4. Avisame si encuentras aparcamiento por Gracia que yo nunca encuentro.'),
-(12, 8,  'Jaja voy en metro. Linea 3, Fontana. ?Quedamos en la puerta a las 22h?'),
-(12, 10, 'Perfecto! Alli estare. Voy a calentar voz :'D');
+-- Solicitud 8 (Marta -> Juegos de mesa de Javier)
+(8, 9,  'Hola Marta! Plan facil, ven con ganas de jugar y pasarlo bien.'),
+(8, 10, 'Perfecto. ?Llevo algun juego o preferis usar los que ya teneis?'),
+(8, 9,  'Trae alguno si te apetece, pero con lo que tengo vamos sobrados.'),
+-- Solicitud 12 (Andrea -> Escape Room de Marta)
+(12, 10, 'Perfecto Andrea! Ya somos el equipo completo para la sesion de la tarde.'),
+(12, 8,  'Genial. Llego con tiempo y os espero en la puerta para entrar juntos.'),
+(12, 10, 'Planazo. Luego comentamos las pruebas con algo de beber cerca.');
 
 -- ======================================
 -- NOTIFICACIONES
@@ -276,17 +267,61 @@ INSERT INTO notificaciones (id_usuario, id_solicitud, tipo) VALUES
 (7, 7, 'recibida'),
 -- Natalia recibe que fue aceptada al running
 (12, 7, 'aceptada'),
--- Javier recibe solicitud de Marta para D&D
+-- Javier recibe solicitud de Marta para juegos de mesa
 (9, 8, 'recibida'),
--- Marta recibe que fue aceptada al D&D
+-- Marta recibe que fue aceptada a juegos de mesa
 (10, 8, 'aceptada'),
--- Javier recibe solicitud de Carlos para D&D
+-- Javier recibe solicitud de Carlos para juegos de mesa
 (9, 9, 'recibida'),
--- Marta recibe que Sofia fue rechazada a su escape room
+-- Sofia recibe que fue rechazada al escape room
 (4, 10, 'rechazada'),
--- Lucia recibe solicitud de Elena para yoga
+-- Lucia recibe solicitud de Andrea para brunch
 (2, 11, 'recibida'),
--- Marta recibe solicitud de Andrea para karaoke
+-- Marta recibe solicitud de Andrea para su escape room
 (10, 12, 'recibida'),
--- Andrea recibe que fue aceptada al karaoke
+-- Andrea recibe que fue aceptada al escape room
 (8, 12, 'aceptada');
+
+-- ======================================
+-- FAVORITOS
+-- ======================================
+INSERT INTO favoritos (id_usuario, id_plan) VALUES
+(1, 2),
+(1, 7),
+(2, 1),
+(3, 9),
+(4, 10),
+(8, 10),
+(12, 3);
+
+-- ======================================
+-- PLANES ADICIONALES DE PRUEBA
+-- ======================================
+
+-- Plan A: Pareja - Pablo invita, Andrea acepta, con conversacion
+INSERT INTO planes (id_usuario, id_interes, titulo, descripcion, max_asistentes, lat, lng, fecha_plan) VALUES
+(3, 18, 'Cena italiana en Malasana', 'Cena tranquila en una trattoria autentica. Busco a alguien con quien compartir buena conversacion y mejor pasta.', 2, 40.42700000, -3.70200000, '2026-05-25 20:30:00');
+
+-- Plan B: Para probar flujo de reserva - Andrea crea plan en Madrid con huecos
+INSERT INTO planes (id_usuario, id_interes, titulo, descripcion, max_asistentes, lat, lng, fecha_plan) VALUES
+(8, 26, 'Exposicion inmersiva en Matadero', 'Nueva expo interactiva en Matadero Madrid. Ideal para descubrir arte contemporaneo y charlar despues con un cafe.', 6, 40.39200000, -3.69700000, '2026-05-28 17:00:00');
+
+-- Fotos para los nuevos planes
+INSERT INTO fotos_planes (id_plan, url, orden) VALUES
+(373, 'https://picsum.photos/seed/cena372/600/400', 0),
+(374, 'https://picsum.photos/seed/expo373/600/400', 0);
+
+-- Andrea solicita unirse al plan de cena de Pablo -> aceptada
+INSERT INTO solicitudes (id_plan, id_solicitante, mensaje, estado) VALUES
+(373, 8, 'Me encanta la pasta! Justo andaba buscando un plan tranquilo para esa noche. Me apunto seguro.', 'aceptada');
+
+-- Conversacion entre Pablo y Andrea sobre la cena
+INSERT INTO mensajes (id_solicitud, id_emisor, mensaje) VALUES
+(13, 3, 'Hola Andrea! Me alegra que te hayas apuntado. Tengo reserva en Da Nicola a las 20:30.'),
+(13, 8, 'Perfecto! Me encanta la comida italiana. Voy vestida informal o mejor arreglada?'),
+(13, 3, 'Es un sitio con encanto pero sin etiqueta. Informal pero mona :)');
+
+-- Notificaciones
+INSERT INTO notificaciones (id_usuario, id_solicitud, tipo) VALUES
+(3, 13, 'recibida'),
+(8, 13, 'aceptada');

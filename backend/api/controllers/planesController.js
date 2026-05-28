@@ -1,16 +1,32 @@
-import { crearPlan, guardarFotosPlan, getPlanes, getPlanById, getPlanesByUsuario, getIntereses } from "../models/planesModel.js";
+import { canUserRatePlan, crearPlan, getPlanRatingByUser, getPlanRatingSummary, guardarFotosPlan, getPlanes, getPlanById, getPlanesByUsuario, getIntereses, upsertPlanRating } from "../models/planesModel.js";
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 export async function listarPlanes(req, res, next) {
   try {
     const orientacion = req.query.orientacion;
+    const modalidad = req.query.modalidad;
+    const radio = req.query.radio;
+    const userLat = req.query.lat;
+    const userLng = req.query.lng;
+    const fechaDesde = req.query.fecha_desde || null;
+    const fechaHasta = req.query.fecha_hasta || null;
+
     const hostOrientation =
       orientacion && orientacion !== 'all' ? orientacion : null;
+    const capacityMode =
+      modalidad === 'pareja' || modalidad === 'grupo' ? modalidad : null;
+    const radioKm = radio ? Number(radio) : null;
 
     const planes = await getPlanes({
       excludeUserId: req.id,
       hostOrientation,
+      capacityMode,
+      lat: radioKm ? userLat : null,
+      lng: radioKm ? userLng : null,
+      radio: radioKm,
+      fechaDesde,
+      fechaHasta,
     });
     const planesConFoto = planes.map(p => ({
       ...p,
@@ -82,6 +98,52 @@ export async function listarIntereses(req, res, next) {
   try {
     const intereses = await getIntereses();
     return res.status(200).json(intereses);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getPlanRatingStatus(req, res, next) {
+  try {
+    const id_plan = Number(req.params.id);
+    const existingRating = await getPlanRatingByUser(id_plan, req.id);
+    const summary = await getPlanRatingSummary(id_plan);
+    const canRate = await canUserRatePlan(id_plan, req.id);
+
+    return res.status(200).json({
+      canRate,
+      userRating: existingRating,
+      averageRating: summary.average_rating,
+      ratingsCount: Number(summary.ratings_count || 0),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function valorarPlan(req, res, next) {
+  try {
+    const id_plan = Number(req.params.id);
+    const puntuacion = Number(req.body?.puntuacion);
+    const comentario = String(req.body?.comentario || "").trim();
+
+    if (!Number.isInteger(puntuacion) || puntuacion < 1 || puntuacion > 5) {
+      return res.status(400).json({ message: "La puntuación debe estar entre 1 y 5" });
+    }
+
+    const canRate = await canUserRatePlan(id_plan, req.id);
+    if (!canRate) {
+      return res.status(403).json({ message: "No puedes valorar este plan" });
+    }
+
+    await upsertPlanRating(id_plan, req.id, puntuacion, comentario);
+    const summary = await getPlanRatingSummary(id_plan);
+
+    return res.status(200).json({
+      message: "Valoración guardada",
+      averageRating: summary.average_rating,
+      ratingsCount: Number(summary.ratings_count || 0),
+    });
   } catch (err) {
     next(err);
   }

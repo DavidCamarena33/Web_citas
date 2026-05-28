@@ -6,6 +6,8 @@ import userRoutes from "./routes/userRouter.js";
 import planesRoutes from "./routes/planesRouter.js";
 import solicitudesRoutes from "./routes/solicitudesRouter.js";
 import mensajesRoutes from "./routes/mensajesRouter.js";
+import favoritosRoutes from "./routes/favoritosRouter.js";
+import notificacionesRoutes from "./routes/notificacionesRouter.js";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -31,6 +33,8 @@ app.use('/api', userRoutes);
 app.use('/api', planesRoutes);
 app.use('/api', solicitudesRoutes);
 app.use('/api', mensajesRoutes);
+app.use('/api', favoritosRoutes);
+app.use('/api', notificacionesRoutes);
 app.use(errores);
 
 app.listen(PORT, () => {

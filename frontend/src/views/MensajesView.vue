@@ -20,10 +20,10 @@
           <div v-else class="conv-list">
             <div
               v-for="conv in conversaciones"
-              :key="conv.solicitud_id"
+              :key="conv.chat_key"
               class="conv-item"
               :class="{
-                active: activeConv?.solicitud_id === conv.solicitud_id,
+                active: activeConv?.chat_key === conv.chat_key,
               }"
               @click="selectConv(conv)"
             >
@@ -36,6 +36,9 @@
                 </div>
                 <div class="conv-plan text-xs text-muted">
                   📋 {{ conv.plan_titulo }}
+                </div>
+                <div v-if="conv.chat_type === 'group' && conv.participantes" class="conv-plan text-xs text-muted">
+                  👥 {{ conv.participantes }}
                 </div>
                 <div class="conv-last text-sm text-muted">
                   {{ conv.ultimo_mensaje || "Sin mensajes" }}
@@ -61,6 +64,9 @@
             <div>
               <div class="font-bold">{{ activeConv.contacto_nombre }}</div>
               <div class="text-xs text-muted">{{ activeConv.plan_titulo }}</div>
+              <div v-if="activeConv.chat_type === 'group' && activeConv.participantes" class="text-xs text-muted">
+                {{ activeConv.participantes }}
+              </div>
             </div>
           </div>
 
@@ -163,7 +169,7 @@ async function loadConversaciones() {
 
   if (activeConv.value) {
     const updatedConv = data.find(
-      (conv) => conv.solicitud_id === activeConv.value.solicitud_id
+      (conv) => conv.chat_key === activeConv.value.chat_key
     );
     activeConv.value = updatedConv || null;
   }
@@ -179,7 +185,7 @@ async function loadMensajes({ showLoader = false, keepScroll = true } = {}) {
   if (showLoader) loadingMsgs.value = true;
 
   try {
-    const { data } = await axios.get(`${API}/mensajes/${activeConv.value.solicitud_id}`, {
+    const { data } = await axios.get(`${API}/mensajes/${activeConv.value.chat_key}`, {
       withCredentials: true,
     });
     mensajes.value = data;
@@ -206,7 +212,7 @@ async function sendMsg() {
     await axios.post(
       `${API}/mensajes`,
       {
-        id_solicitud: activeConv.value.solicitud_id,
+        chat_key: activeConv.value.chat_key,
         mensaje: newMsg.value.trim(),
       },
       { withCredentials: true },

@@ -1,4 +1,5 @@
 import { crearSolicitud, getSolicitudesPlan, getMisSolicitudes, actualizarEstado, getCupoPlan, getSolicitudById } from "../models/solicitudesModel.js";
+import { crearNotificacion } from "../models/notificacionesModel.js";
 
 export async function solicitar(req, res, next) {
   try {
@@ -8,14 +9,18 @@ export async function solicitar(req, res, next) {
 
     const cupo = await getCupoPlan(id_plan);
     if (!cupo) return res.status(404).json({ message: 'Plan no encontrado' });
+    const plazasDisponibles = Math.max(0, Number(cupo.max_asistentes) - 1);
     if (Number(cupo.id_usuario) === Number(id_solicitante)) {
       return res.status(403).json({ message: 'No puedes unirte a un plan creado por ti' });
     }
-    if (Number(cupo.aceptadas) >= Number(cupo.max_asistentes)) {
+    if (Number(cupo.aceptadas) >= plazasDisponibles) {
       return res.status(409).json({ message: 'Este plan ya está completo' });
     }
 
     const result = await crearSolicitud(id_plan, id_solicitante, mensaje);
+    if (cupo?.id_usuario) {
+      await crearNotificacion(cupo.id_usuario, result.insertId, 'recibida');
+    }
     return res.status(201).json({ message: 'Solicitud enviada', id: result.insertId });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
@@ -70,11 +75,13 @@ export async function responderSolicitud(req, res, next) {
     }
 
     if (estado === 'aceptada') {
-      if (cupo && Number(cupo.aceptadas) >= Number(cupo.max_asistentes)) {
+      const plazasDisponibles = Math.max(0, Number(cupo.max_asistentes) - 1);
+      if (cupo && Number(cupo.aceptadas) >= plazasDisponibles) {
         return res.status(409).json({ message: 'No puedes aceptar más personas: cupo completo' });
       }
     }
     await actualizarEstado(req.params.id, estado);
+    await crearNotificacion(solicitud.id_solicitante, solicitud.id, estado);
     return res.status(200).json({ message: `Solicitud ${estado}` });
   } catch (err) {
     next(err);
