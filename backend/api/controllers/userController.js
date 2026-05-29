@@ -6,6 +6,13 @@ import { getByEmail, registro, ubicacionuser, getPerfilById, getHostedPlansByUse
 const secretKey = process.env.JWT_SECRET || "paella";
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
+function toPublicPhotoUrl(photoUrl) {
+  if (!photoUrl) return null;
+  if (/^https?:\/\//i.test(photoUrl)) return photoUrl;
+  if (photoUrl.startsWith('/uploads/')) return `${BASE_URL}${photoUrl}`;
+  return `${BASE_URL}/uploads/${photoUrl}`;
+}
+
 export async function login(req, res, next) {
   try {
     const { email, contrasena } = req.body;
@@ -80,7 +87,7 @@ export async function getPerfil(req, res, next) {
     const profileId = Number(req.params.id || req.id);
     const perfil = await getPerfilById(profileId);
     if (!perfil) return res.status(404).json({ message: 'Usuario no encontrado' });
-    perfil.fotos = perfil.fotos.map(f => `${BASE_URL}/uploads/${f}`);
+    perfil.fotos = perfil.fotos.map(toPublicPhotoUrl).filter(Boolean);
     return res.status(200).json(perfil);
   } catch (err) {
     next(err);
@@ -107,11 +114,17 @@ export async function getPlanesHostedByUser(req, res, next) {
 
 export async function subirFoto(req, res, next) {
   try {
-    if (!req.file) return res.status(400).json({ message: 'No se subió ningún archivo' });
-    await subirFotoUsuario(req.id, req.file.filename);
+    if (!req.file) return res.status(400).json({ message: 'No se subio ningun archivo' });
+    const principal = req.body?.principal === 'true' || req.body?.principal === true;
+    if (principal) {
+      await actualizarFotoPrincipalUsuario(req.id, req.file.filename);
+    } else {
+      await subirFotoUsuario(req.id, req.file.filename);
+    }
     return res.status(201).json({
       message: 'Foto subida',
-      url: `${BASE_URL}/uploads/${req.file.filename}`
+      url: toPublicPhotoUrl(req.file.filename),
+      principal
     });
   } catch (err) {
     next(err);
@@ -135,7 +148,7 @@ export async function actualizarDescripcion(req, res, next) {
   try {
     const { descripcion } = req.body;
     await updateDescripcion(req.id, descripcion);
-    return res.status(200).json({ message: 'Descripción actualizada' });
+    return res.status(200).json({ message: 'Descripcion actualizada' });
   } catch (err) {
     next(err);
   }

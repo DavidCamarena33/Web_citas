@@ -74,109 +74,82 @@ INSERT INTO fotos_usuarios (id_usuario, url, orden) VALUES
 --   41=Viajes, 45=Playa, 47=Camping, 49=Roadtrips
 --   50=Discotecas, 51=Karaoke
 -- ======================================
-INSERT INTO planes (id_usuario, id_interes, titulo, descripcion, max_asistentes, lat, lng, fecha_plan)
-WITH RECURSIVE dias AS (
-  SELECT 1 AS dia
-  UNION ALL
-  SELECT dia + 1 FROM dias WHERE dia < 31
-)
-SELECT
-  u.id,
-  CASE u.id
-    WHEN 1 THEN 1
-    WHEN 2 THEN 19
-    WHEN 3 THEN 6
-    WHEN 4 THEN 26
-    WHEN 5 THEN 3
-    WHEN 6 THEN 29
-    WHEN 7 THEN 2
-    WHEN 8 THEN 8
-    WHEN 9 THEN 38
-    WHEN 10 THEN 35
-    WHEN 11 THEN 15
-    WHEN 12 THEN 27
-  END AS id_interes,
-  CASE u.id
-    WHEN 1 THEN 'Ruta por La Pedriza'
-    WHEN 2 THEN 'Brunch en Malasana'
-    WHEN 3 THEN 'Padel en Chamartin'
-    WHEN 4 THEN 'Tarde de museos en Barcelona'
-    WHEN 5 THEN 'Ruta ciclista por Valencia'
-    WHEN 6 THEN 'Taller de acuarela en Sevilla'
-    WHEN 7 THEN 'Running al amanecer'
-    WHEN 8 THEN 'Surf en Cadiz'
-    WHEN 9 THEN 'Sesion de juegos de mesa'
-    WHEN 10 THEN 'Escape Room en Barcelona'
-    WHEN 11 THEN 'Cata de vinos en Logrono'
-    WHEN 12 THEN 'Concierto y paseo por Madrid'
-  END AS titulo,
-  CASE u.id
-    WHEN 1 THEN 'Salida desde el aparcamiento de Canto Cochino. Haremos una ruta por naturaleza y luego tomamos algo. Plan relajado y con buen ambiente.'
-    WHEN 2 THEN 'Quedamos para desayunar tarde, charlar sin prisa y conocer gente maja. Ambiente tranquilo y mesa reservada.'
-    WHEN 3 THEN 'Partido amistoso de padel con buen rollo. Nivel intermedio y ganas de echar unas risas.'
-    WHEN 4 THEN 'Recorremos una expo y despues comentamos la visita con un cafe cerca del centro.'
-    WHEN 5 THEN 'Salida en bici con ritmo comodo y parada para cafe a mitad del recorrido.'
-    WHEN 6 THEN 'Sesion creativa para pintar, aprender tecnicas basicas y pasar una tarde agradable.'
-    WHEN 7 THEN 'Entreno suave para arrancar el dia con energia y buena conversacion al terminar.'
-    WHEN 8 THEN 'Quedada para surfear, practicar equilibrio y aprovechar el buen tiempo junto al mar.'
-    WHEN 9 THEN 'Tarde de juegos y estrategia con gente nueva. Ideal para hablar y reirse un rato.'
-    WHEN 10 THEN 'Plan divertido para resolver pistas en equipo y luego comentar la jugada tomando algo.'
-    WHEN 11 THEN 'Cata informal con varios vinos y algo de picoteo para compartir impresiones.'
-    WHEN 12 THEN 'Quedamos antes del concierto para conocernos y despues alargamos la noche con un paseo.'
-  END AS descripcion,
-  CASE u.id
-    WHEN 1 THEN 8
-    WHEN 2 THEN 6
-    WHEN 3 THEN 4
-    WHEN 4 THEN 8
-    WHEN 5 THEN 10
-    WHEN 6 THEN 12
-    WHEN 7 THEN 8
-    WHEN 8 THEN 6
-    WHEN 9 THEN 6
-    WHEN 10 THEN 5
-    WHEN 11 THEN 8
-    WHEN 12 THEN 7
-  END AS max_asistentes,
-  CASE u.id
-    WHEN 1 THEN 40.72800000
-    WHEN 2 THEN 40.43200000
-    WHEN 3 THEN 40.45300000
-    WHEN 4 THEN 41.38300000
-    WHEN 5 THEN 39.32500000
-    WHEN 6 THEN 37.38600000
-    WHEN 7 THEN 36.72100000
-    WHEN 8 THEN 36.52700000
-    WHEN 9 THEN 40.41800000
-    WHEN 10 THEN 41.39500000
-    WHEN 11 THEN 42.46472000
-    WHEN 12 THEN 40.41700000
-  END AS lat,
-  CASE u.id
-    WHEN 1 THEN -3.89600000
-    WHEN 2 THEN -3.70100000
-    WHEN 3 THEN -3.68700000
-    WHEN 4 THEN 2.16600000
-    WHEN 5 THEN -0.35700000
-    WHEN 6 THEN -5.99200000
-    WHEN 7 THEN -4.42100000
-    WHEN 8 THEN -6.28900000
-    WHEN 9 THEN -3.69400000
-    WHEN 10 THEN 2.16100000
-    WHEN 11 THEN -2.44760000
-    WHEN 12 THEN -3.70800000
-  END AS lng,
-  TIMESTAMP(
-    DATE(CONCAT('2026-05-', LPAD(dias.dia, 2, '0'))),
-    MAKETIME(
-      8 + MOD(u.id + dias.dia, 13),
-      MOD((u.id * 7 + dias.dia * 5), 4) * 15,
-      0
-    )
-  ) AS fecha_plan
-FROM usuarios u
-CROSS JOIN dias
-WHERE u.rol = 'usuario';
+INSERT INTO planes (id_usuario, id_interes, titulo, descripcion, max_asistentes, lat, lng, fecha_plan) VALUES
+
+-- Plan 1: Senderismo por la Pedriza
+(1, 1,  'Ruta por La Pedriza',
+ 'Salida desde el aparcamiento de Canto Cochino. Haremos la ruta circular al Yelmo, unos 12 km. Nivel medio. Llevad agua y botas de monte.',
+ 8, 40.72800000, -3.89600000, '2026-04-05 08:30:00'),
+
+-- Plan 2: Brunch dominical
+(2, 19, 'Brunch en Malasana',
+ 'Quedamos en Madre (Calle Padre Damian) para un brunch tranquilo de domingo. Reservo mesa para 4-5 personas. Sin prisa!',
+ 6, 40.43200000, -3.70100000, '2026-04-06 11:30:00'),
+
+-- Plan 3: Padel
+(3, 6,  'Padel en Chamartin',
+ '2 pistas reservadas en Club Chamartin. Somos 2, buscamos 2 mas para completar. Nivel intermedio. Duracion: 1h30.',
+ 4, 40.45300000, -3.68700000, '2026-04-02 19:00:00'),
+
+-- Plan 4: Museos Barcelona
+(4, 26, 'Tarde en el MACBA y el CCCB',
+ 'Visita a las exposiciones temporales de ambos espacios. Despues tomamos algo en el Raval. Duracion aprox. 3 horas.',
+ 8, 41.38300000,  2.16600000, '2026-04-10 16:00:00'),
+
+-- Plan 5: Ruta ciclista
+(5, 3,  'Ruta ciclista por la Albufera',
+ 'Salida en bici desde Valencia centro hasta el lago de la Albufera. Unos 25 km de ida y vuelta por carril bici. Nivel facil-medio.',
+ 10, 39.32500000, -0.35700000, '2026-04-12 09:00:00'),
+
+-- Plan 6: Taller de pintura
+(6, 29, 'Taller de acuarela en Sevilla',
+ 'Taller para principiantes en el Barrio de Santa Cruz. Todo el material incluido (5EUR pp). Aprendemos tecnicas basicas de acuarela.',
+ 12, 37.38600000, -5.99200000, '2026-04-08 17:30:00'),
+
+-- Plan 7: Running
+(7, 2,  'Entreno running por el Parque del Retiro',
+ 'Salida de 10 km por el carril del Retiro. Ritmo 5:30/km aprox. Quedamos en la puerta de Alcala a las 7:15.',
+ 8, 40.41500000, -3.68400000, '2026-04-03 07:15:00'),
+
+-- Plan 8: Surf
+(8, 8,  'Surf en Conil de la Frontera',
+ 'Surf para principiantes y nivel medio. Alquiler de tablas en la playa de Los Bateles. Instructor incluido (20EUR pp). El mar esta genial!',
+ 6, 36.27400000, -6.08500000, '2026-04-19 10:00:00'),
+
+-- Plan 9: Rol D&D
+(9, 38, 'Sesion de D&D - Campana nueva',
+ 'Arrancamos campana nueva para gente que quiera jugar a D&D. DM con experiencia. Se valorara conocer las reglas basicas, pero no es obligatorio.',
+ 6, 40.41800000, -3.69400000, '2026-04-04 18:00:00'),
+
+-- Plan 10: Escape Room
+(10, 35, 'Escape Room en Barcelona',
+ 'Somos 3, buscamos 1-2 mas. Sala "El Laberinto del Tiempo" en Zero Escape (Carrer de Provenca). Nivel avanzado. Precio ~18EUR pp.',
+ 5, 41.39500000,  2.16100000, '2026-04-11 20:00:00'),
+
+-- Plan 11: Cata vinos
+(11, 15, 'Cata de vinos de La Rioja',
+ 'Cata comentada de 6 vinos D.O. Rioja con maridaje de quesos. Organizo yo en casa. Maximo 8 personas. Aportacion 15EUR pp.',
+ 8, 42.46472000, -2.44760000, '2026-04-25 20:30:00'),
+
+-- Plan 12: Concierto
+(12, 27, 'Concierto indie-pop en el Joy Eslava',
+ 'Vamos al concierto de Carino este sabado en Joy Eslava. Quedo antes en el bar de enfrente a las 22h. Entradas por separado.',
+ 7, 40.41700000, -3.70800000, '2026-04-05 22:00:00'), 
+
+-- Plan 13: Yoga
+(2, 4,  'Yoga al amanecer en el Retiro',
+ 'Sesion de yoga para dar la bienvenida al fin de semana. Lleva tu esterilla. Nivel: todos los niveles. Despues un desayuno en el kiosco.',
+ 10, 40.41500000, -3.68100000, '2026-04-06 08:00:00'),
+
+-- Plan 14: Sushi
+(7, 17, 'Sushi lovers - mesa para 4',
+ 'Mesa reservada en Kappou (Ctra. de las Palmas) en Malaga. Pedimos omakase para la mesa. Precio aprox. 30-40EUR pp.',
+ 4, 36.71200000, -4.43100000, '2026-04-18 21:00:00'),
+
+-- Plan 15: Karaoke
+(10, 51, 'Karaoke noche en Gracia',
+ 'Somos 2 y buscamos mas gente animada para karaoke en El Karaoke Bar (Carrer Verdi). Empezamos a las 22h y cerramos el local.',
+ 12, 41.40200000,  2.15700000, '2026-04-17 22:00:00');
 
 -- ======================================
 -- FOTOS PLANES

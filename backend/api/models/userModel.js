@@ -52,31 +52,60 @@ export async function getPerfilById(id) {
   const [stats] = await connection.query(
     `SELECT
       (SELECT COUNT(*) FROM planes WHERE id_usuario = ?) AS planes_hosted,
-      (SELECT COUNT(*) FROM solicitudes WHERE id_solicitante = ? AND estado = 'aceptada') AS planes_joined,
-      (SELECT ROUND(AVG(vp.puntuacion), 1)
-       FROM valoraciones_planes vp
-       JOIN planes p ON p.id = vp.id_plan
-       WHERE p.id_usuario = ?) AS average_rating`,
-    [id, id, id]
+      (SELECT COUNT(*) FROM solicitudes WHERE id_solicitante = ? AND estado = 'aceptada') AS planes_joined`,
+    [id, id]
   );
   user.stats = stats[0];
+
+  try {
+    const [[ratingStats]] = await connection.query(
+      `SELECT ROUND(AVG(vp.puntuacion), 1) AS average_rating
+       FROM valoraciones_planes vp
+       JOIN planes p ON p.id = vp.id_plan
+       WHERE p.id_usuario = ?`,
+      [id]
+    );
+    user.stats.average_rating = ratingStats?.average_rating || null;
+  } catch (err) {
+    if (err?.code !== "ER_NO_SUCH_TABLE") throw err;
+    user.stats.average_rating = null;
+  }
+
   return user;
 }
 
-export async function getHostedPlansByUserId(id) {
-  const [rows] = await connection.query(
-    `SELECT p.id, p.titulo, p.descripcion, p.max_asistentes, p.lat, p.lng, p.fecha_plan,
-            (SELECT fp.url FROM fotos_planes fp WHERE fp.id_plan = p.id ORDER BY fp.orden LIMIT 1) AS foto,
-            i.nombre AS interes,
-            (SELECT COUNT(*) FROM solicitudes s WHERE s.id_plan = p.id AND s.estado = 'aceptada') AS spots_filled,
-            'hosting' AS tipo
-     FROM planes p
+export async function getHostedPlansByUserId(id_usuario) {
+  const selectBase = `SELECT p.id, p.titulo, p.descripcion, p.max_asistentes, p.lat, p.lng, p.fecha_plan, p.fecha_creacion,
+          (SELECT fp.url FROM fotos_planes fp WHERE fp.id_plan = p.id ORDER BY fp.orden LIMIT 1) AS foto,
+          i.nombre AS interes,
+          (SELECT COUNT(*) FROM solicitudes s WHERE s.id_plan = p.id AND s.estado = 'aceptada') AS spots_filled,`;
+  const fromBase = `FROM planes p
      JOIN intereses i ON i.id = p.id_interes
      WHERE p.id_usuario = ?
-     ORDER BY p.fecha_plan ASC, p.fecha_creacion DESC`,
-    [id]
-  );
-  return rows;
+     ORDER BY COALESCE(p.fecha_plan, p.fecha_creacion) DESC`;
+
+  try {
+    const [rows] = await connection.query(
+      `${selectBase}
+          (SELECT ROUND(AVG(vp.puntuacion), 1) FROM valoraciones_planes vp WHERE vp.id_plan = p.id) AS average_rating,
+          (SELECT COUNT(*) FROM valoraciones_planes vp WHERE vp.id_plan = p.id) AS ratings_count,
+          'hosting' AS tipo
+       ${fromBase}`,
+      [id_usuario]
+    );
+    return rows;
+  } catch (err) {
+    if (err?.code !== "ER_NO_SUCH_TABLE") throw err;
+    const [rows] = await connection.query(
+      `${selectBase}
+          NULL AS average_rating,
+          0 AS ratings_count,
+          'hosting' AS tipo
+       ${fromBase}`,
+      [id_usuario]
+    );
+    return rows;
+  }
 }
 
 export async function subirFotoUsuario(id_usuario, filename) {
@@ -85,6 +114,7 @@ export async function subirFotoUsuario(id_usuario, filename) {
     [id_usuario]
   );
   const next_orden = orden_max_result[0][0].next_orden;
+
   const [result] = await connection.query(
     `INSERT INTO fotos_usuarios (id_usuario, url, orden) VALUES (?, ?, ?)`,
     [id_usuario, filename, next_orden]
