@@ -56,15 +56,14 @@ export async function getPlanes({
     params.push(Number(lat), Number(lng), Number(lat), Number(radio));
   }
 
+  conditions.push("(p.fecha_plan IS NULL OR p.fecha_plan >= NOW())");
+
   if (fechaDesde) {
     conditions.push("(p.fecha_plan IS NULL OR p.fecha_plan >= ?)");
     params.push(fechaDesde);
   } else if (fechaHasta) {
-    conditions.push("(p.fecha_plan IS NULL OR p.fecha_plan >= NOW())");
     conditions.push("(p.fecha_plan IS NULL OR p.fecha_plan <= ?)");
     params.push(fechaHasta);
-  } else {
-    conditions.push("(p.fecha_plan IS NULL OR p.fecha_plan >= NOW())");
   }
 
   if (fechaDesde && fechaHasta) {
@@ -169,23 +168,49 @@ export async function getPlanRatingByUser(id_plan, id_usuario) {
   return row || null;
 }
 
-export async function canUserRatePlan(id_plan, id_usuario) {
-  const [[row]] = await connection.query(
-    `SELECT p.fecha_plan
-     FROM solicitudes s
-     JOIN planes p ON p.id = s.id_plan
-     WHERE s.id_plan = ?
-       AND s.id_solicitante = ?
-       AND s.estado = 'aceptada'
-       AND p.fecha_plan IS NOT NULL
+export async function getPlanRatingEligibility(id_plan, id_usuario) {
+  const [[plan]] = await connection.query(
+    `SELECT p.id, p.id_usuario, p.fecha_plan, s.estado AS solicitud_estado
+     FROM planes p
+     LEFT JOIN solicitudes s
+       ON s.id_plan = p.id
+      AND s.id_solicitante = ?
+     WHERE p.id = ?
      LIMIT 1`,
-    [id_plan, id_usuario]
+    [id_usuario, id_plan]
   );
 
-  if (!row?.fecha_plan) return false;
+  if (!plan) {
+    return { canRate: false, reason: "PLAN_NOT_FOUND" };
+  }
 
-  const planDate = new Date(row.fecha_plan);
-  return !Number.isNaN(planDate.getTime()) && planDate < new Date();
+  if (Number(plan.id_usuario) === Number(id_usuario)) {
+    return { canRate: false, reason: "OWN_PLAN" };
+  }
+
+  if (plan.solicitud_estado !== "aceptada") {
+    return { canRate: false, reason: "NOT_ACCEPTED" };
+  }
+
+  if (!plan.fecha_plan) {
+    return { canRate: false, reason: "NO_DATE" };
+  }
+
+  const planDate = new Date(plan.fecha_plan);
+  if (Number.isNaN(planDate.getTime())) {
+    return { canRate: false, reason: "INVALID_DATE" };
+  }
+
+  if (planDate >= new Date()) {
+    return { canRate: false, reason: "PLAN_NOT_ENDED" };
+  }
+
+  return { canRate: true, reason: null };
+}
+
+export async function canUserRatePlan(id_plan, id_usuario) {
+  const eligibility = await getPlanRatingEligibility(id_plan, id_usuario);
+  return eligibility.canRate;
 }
 
 export async function upsertPlanRating(id_plan, id_usuario, puntuacion, comentario) {

@@ -248,9 +248,6 @@ const hoveredPlanId = ref(null);
 const showFavoritesOnly = ref(false);
 const intereses = ref([]);
 const userCoords = ref(null);
-const userGenero = ref("");
-const userOrientacion = ref("all");
-const userOrientacionRaw = ref(null);
 const PLANES_BATCH_SIZE = 6;
 const visiblePlanesCount = ref(PLANES_BATCH_SIZE);
 
@@ -310,12 +307,8 @@ const filteredPlanes = computed(() => {
     const matchesCategoria =
       selectedCategoria.value === "all" ||
       plan.categoria === selectedCategoria.value;
-    const matchesOrientacion =
-      userOrientacion.value === "all" ||
-      normalizeOrientacion(plan.host_orientacion) === userOrientacion.value;
-    const matchesGenero = matchesGeneroDeseado(plan.host_genero);
 
-    return matchesCategoria && matchesOrientacion && matchesGenero;
+    return matchesCategoria;
   });
 
   if (showFavoritesOnly.value) {
@@ -427,34 +420,6 @@ async function handleToggleFavorite(plan) {
   }
 }
 
-function normalizeOrientacion(orientacion) {
-  if (!orientacion) return "all";
-  const normalized = String(orientacion).trim().toLowerCase();
-  if (normalized === "homosexual" || normalized === "gay") return "gay";
-  if (normalized === "heterosexual" || normalized === "hetero") return "hetero";
-  if (normalized === "bisexual" || normalized === "bi") return "bi";
-  return normalized;
-}
-
-function normalizeGenero(genero) {
-  if (!genero) return "";
-  return String(genero).trim().toLowerCase();
-}
-
-function matchesGeneroDeseado(hostGenero) {
-  const generoUsuario = normalizeGenero(userGenero.value);
-  const generoHost = normalizeGenero(hostGenero);
-
-  if (!generoUsuario || !generoHost || userOrientacion.value === "all")
-    return true;
-
-  if (userOrientacion.value === "bi") return true;
-  if (userOrientacion.value === "hetero") return generoUsuario !== generoHost;
-  if (userOrientacion.value === "gay") return generoUsuario === generoHost;
-
-  return true;
-}
-
 function showToast(msg) {
   toast.value = msg;
   setTimeout(() => (toast.value = ""), 3000);
@@ -462,7 +427,6 @@ function showToast(msg) {
 
 async function refetchPlanes() {
   await store.fetchPlanes({
-    orientacion: userOrientacionRaw.value,
     modalidad: selectedModalidad.value,
     radio: selectedRadio.value,
     lat: userCoords.value?.lat || null,
@@ -475,11 +439,13 @@ async function refetchPlanes() {
 async function loadUserContext() {
   try {
     const perfil = await authStore.fetchPerfil();
-    const orientacionPerfil = perfil?.orientacion || null;
-
-    userGenero.value = normalizeGenero(perfil?.genero);
-    userOrientacionRaw.value = orientacionPerfil;
-    userOrientacion.value = normalizeOrientacion(orientacionPerfil || "all");
+    if (perfil?.id && !authStore.user?.id) {
+      authStore.user = {
+        id: perfil.id,
+        nombre: perfil.nombre,
+        email: perfil.email,
+      };
+    }
 
     if (perfil?.lat && perfil?.lng) {
       userCoords.value = {

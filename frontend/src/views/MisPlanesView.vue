@@ -190,9 +190,10 @@
               type="button"
               class="rating-heart-btn"
               :class="{ active: heart <= ratingForm.puntuacion }"
+              :disabled="!ratingCanSubmit"
               @click="ratingForm.puntuacion = heart"
             >
-              <i :class="heart <= ratingForm.puntuacion ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
+              <span class="material-symbols-outlined">favorite</span>
             </button>
           </div>
 
@@ -215,7 +216,7 @@
             <button
               class="btn btn-primary"
               type="button"
-              :disabled="ratingSubmitting || !ratingForm.puntuacion"
+              :disabled="ratingSubmitting || !ratingCanSubmit || !ratingForm.puntuacion"
               @click="submitRatingModal"
             >
               {{ ratingSubmitting ? "Guardando..." : "Guardar valoración" }}
@@ -242,6 +243,7 @@ const loading = ref(false);
 const ratingModalOpen = ref(false);
 const ratingSubmitting = ref(false);
 const ratingModalMessage = ref("");
+const ratingCanSubmit = ref(false);
 const selectedPlanForRating = ref(null);
 const ratingForm = ref({ puntuacion: 0, comentario: "" });
 
@@ -307,15 +309,20 @@ async function openRatingModal(plan) {
   ratingModalOpen.value = true;
   ratingSubmitting.value = false;
   ratingModalMessage.value = "";
+  ratingCanSubmit.value = false;
   ratingForm.value = { puntuacion: 0, comentario: "" };
 
   try {
     const data = await store.fetchRatingStatus(plan.id);
+    ratingCanSubmit.value = Boolean(data?.canRate);
     if (data?.userRating) {
       ratingForm.value = {
         puntuacion: Number(data.userRating.puntuacion || 0),
         comentario: data.userRating.comentario || "",
       };
+    }
+    if (!data?.canRate) {
+      ratingModalMessage.value = data?.reasonMessage || "Este plan todavía no se puede valorar.";
     }
   } catch (e) {
     ratingModalMessage.value = "No se pudo cargar tu valoración anterior.";
@@ -326,21 +333,25 @@ function closeRatingModal() {
   ratingModalOpen.value = false;
   ratingSubmitting.value = false;
   ratingModalMessage.value = "";
+  ratingCanSubmit.value = false;
   selectedPlanForRating.value = null;
   ratingForm.value = { puntuacion: 0, comentario: "" };
 }
 
 async function submitRatingModal() {
-  if (!selectedPlanForRating.value?.id || !ratingForm.value.puntuacion) return;
+  if (!selectedPlanForRating.value?.id || !ratingCanSubmit.value || !ratingForm.value.puntuacion) return;
 
   ratingSubmitting.value = true;
   ratingModalMessage.value = "";
   try {
-    await store.submitRating(selectedPlanForRating.value.id, {
+    const data = await store.submitRating(selectedPlanForRating.value.id, {
       puntuacion: ratingForm.value.puntuacion,
       comentario: ratingForm.value.comentario,
     });
+    ratingCanSubmit.value = true;
     ratingModalMessage.value = "✅ Valoración guardada";
+    selectedPlanForRating.value.average_rating = data.averageRating;
+    selectedPlanForRating.value.ratings_count = data.ratingsCount;
     await store.fetchMisPlanes();
     setTimeout(() => {
       closeRatingModal();
@@ -624,10 +635,14 @@ function formatDate(d) {
   border: 0;
   background: transparent;
   color: #cbd5e1;
-  font-size: 2rem;
   line-height: 1;
   cursor: pointer;
   transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.rating-heart-btn .material-symbols-outlined {
+  font-size: 2rem;
+  font-variation-settings: "FILL" 1, "wght" 500, "GRAD" 0, "opsz" 24;
 }
 
 .rating-heart-btn:hover {
@@ -636,6 +651,12 @@ function formatDate(d) {
 
 .rating-heart-btn.active {
   color: #f43f5e;
+}
+
+.rating-heart-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
 }
 
 .rating-modal-actions {

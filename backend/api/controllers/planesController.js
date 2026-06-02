@@ -1,6 +1,20 @@
-import { canUserRatePlan, crearPlan, getPlanRatingByUser, getPlanRatingSummary, guardarFotosPlan, getPlanes, getPlanById, getPlanesByUsuario, getIntereses, upsertPlanRating } from "../models/planesModel.js";
+import { crearPlan, getPlanRatingByUser, getPlanRatingEligibility, getPlanRatingSummary, guardarFotosPlan, getPlanes, getPlanById, getPlanesByUsuario, getIntereses, upsertPlanRating } from "../models/planesModel.js";
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+
+const ratingReasonMessages = {
+  PLAN_NOT_FOUND: "Plan no encontrado",
+  OWN_PLAN: "No puedes valorar tu propio plan",
+  NOT_ACCEPTED: "Solo puedes valorar planes en los que fuiste aceptado",
+  NO_DATE: "No puedes valorar un plan sin fecha",
+  INVALID_DATE: "La fecha del plan no es válida",
+  PLAN_NOT_ENDED: "Solo puedes valorar un plan cuando ya ha finalizado",
+};
+
+function normalizePlanId(value) {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
 
 export async function listarPlanes(req, res, next) {
   try {
@@ -105,13 +119,19 @@ export async function listarIntereses(req, res, next) {
 
 export async function getPlanRatingStatus(req, res, next) {
   try {
-    const id_plan = Number(req.params.id);
+    const id_plan = normalizePlanId(req.params.id);
+    if (!id_plan) {
+      return res.status(400).json({ message: "Id de plan no válido" });
+    }
+
     const existingRating = await getPlanRatingByUser(id_plan, req.id);
     const summary = await getPlanRatingSummary(id_plan);
-    const canRate = await canUserRatePlan(id_plan, req.id);
+    const eligibility = await getPlanRatingEligibility(id_plan, req.id);
 
     return res.status(200).json({
-      canRate,
+      canRate: eligibility.canRate,
+      reason: eligibility.reason,
+      reasonMessage: eligibility.reason ? ratingReasonMessages[eligibility.reason] : null,
       userRating: existingRating,
       averageRating: summary.average_rating,
       ratingsCount: Number(summary.ratings_count || 0),
@@ -123,17 +143,28 @@ export async function getPlanRatingStatus(req, res, next) {
 
 export async function valorarPlan(req, res, next) {
   try {
-    const id_plan = Number(req.params.id);
+    const id_plan = normalizePlanId(req.params.id);
     const puntuacion = Number(req.body?.puntuacion);
     const comentario = String(req.body?.comentario || "").trim();
+
+    if (!id_plan) {
+      return res.status(400).json({ message: "Id de plan no válido" });
+    }
 
     if (!Number.isInteger(puntuacion) || puntuacion < 1 || puntuacion > 5) {
       return res.status(400).json({ message: "La puntuación debe estar entre 1 y 5" });
     }
 
-    const canRate = await canUserRatePlan(id_plan, req.id);
-    if (!canRate) {
-      return res.status(403).json({ message: "No puedes valorar este plan" });
+    const eligibility = await getPlanRatingEligibility(id_plan, req.id);
+    if (eligibility.reason === "PLAN_NOT_FOUND") {
+      return res.status(404).json({ message: ratingReasonMessages.PLAN_NOT_FOUND });
+    }
+
+    if (!eligibility.canRate) {
+      return res.status(403).json({
+        message: ratingReasonMessages[eligibility.reason] || "No puedes valorar este plan",
+        reason: eligibility.reason,
+      });
     }
 
     await upsertPlanRating(id_plan, req.id, puntuacion, comentario);

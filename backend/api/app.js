@@ -17,8 +17,20 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+const allowedOrigins = new Set([
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+]);
+
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Origen no permitido por CORS'));
+  },
   credentials: true
 }));
 
