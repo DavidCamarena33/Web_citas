@@ -702,8 +702,23 @@ function formatDate(d) {
 }
 
 @media (max-width: 480px) {
+  .mb-10 > .flex {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .mb-10 > .flex .btn,
+  .history-btn {
+    width: 100%;
+  }
+
+  .tabs-underline-container {
+    overflow-x: auto;
+  }
+
   .tabs-row {
     gap: 1rem;
+    min-width: max-content;
   }
 
   .horizontal-plan-card {
@@ -713,6 +728,22 @@ function formatDate(d) {
 
   .h-img-wrap {
     height: 160px;
+  }
+
+  .h-body {
+    padding: 0;
+  }
+
+  .h-actions {
+    gap: 0.6rem;
+  }
+
+  .rating-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .rating-modal-actions .btn {
+    width: 100%;
   }
 }
 

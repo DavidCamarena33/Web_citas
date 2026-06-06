@@ -24,6 +24,7 @@ export async function getPlanes({
   radio = null,
   excludeUserId = null,
   hostOrientation = null,
+  hostGender = null,
   capacityMode = null,
   fechaDesde = null,
   fechaHasta = null,
@@ -39,6 +40,11 @@ export async function getPlanes({
   if (hostOrientation) {
     conditions.push("u.orientacion = ?");
     params.push(hostOrientation);
+  }
+
+  if (hostGender) {
+    conditions.push("u.genero = ?");
+    params.push(hostGender);
   }
 
   if (capacityMode === "pareja") {

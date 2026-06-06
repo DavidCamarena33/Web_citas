@@ -264,4 +264,29 @@ function formatDate(d) {
   color: #64748b;
   cursor: not-allowed;
 }
+
+@media (max-width: 640px) {
+  .plan-card {
+    padding: 0.85rem;
+    border-radius: var(--radius-md);
+  }
+
+  .pc-img-wrap {
+    height: 11rem;
+  }
+
+  .pc-body {
+    margin-top: 0.85rem;
+    padding: 0;
+  }
+
+  .pc-title {
+    font-size: 1rem;
+  }
+
+  .pc-btn {
+    min-height: 2.5rem;
+    font-size: 0.82rem;
+  }
+}
 </style>

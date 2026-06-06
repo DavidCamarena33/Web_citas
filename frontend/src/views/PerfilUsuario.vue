@@ -19,10 +19,10 @@
                   title="Foto de perfil"
                 >
                   <img
-                    v-if="perfil.fotos.length"
-                    :src="perfil.fotos[0]"
+                    v-if="perfil.foto_principal"
+                    :src="perfil.foto_principal"
                     alt="Foto principal"
-                    @error="removeBrokenPhoto(0)"
+                    @error="removeBrokenProfilePhoto"
                   />
                   <span v-else>{{ initials }}</span>
                 </div>
@@ -265,7 +265,7 @@ const authStore = useAuthStore();
 const planesStore = usePlanesStore();
 
 function createEmptyProfile() {
-  return { id: null, nombre: "", fotos: [], stats: {}, descripcion: "", direccion: "" };
+  return { id: null, nombre: "", foto_principal: null, fotos: [], stats: {}, descripcion: "", direccion: "" };
 }
 
 const routeProfileId = computed(() => {
@@ -341,6 +341,7 @@ async function loadProfileView() {
     perfil.value = {
       ...createEmptyProfile(),
       ...profileResponse.data,
+      foto_principal: profileResponse.data?.foto_principal || null,
       fotos: Array.isArray(profileResponse.data?.fotos) ? profileResponse.data.fotos : [],
       stats: profileResponse.data?.stats || {},
     };
@@ -381,6 +382,10 @@ function removeBrokenPhoto(index) {
   perfil.value.fotos = perfil.value.fotos.filter((_, i) => i !== index);
 }
 
+function removeBrokenProfilePhoto() {
+  perfil.value.foto_principal = null;
+}
+
 function validatePhoto(file) {
   if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
     return "Formato no permitido. Usa JPG, PNG, GIF o WEBP.";
@@ -418,9 +423,7 @@ async function uploadPhoto(e, { principal, mode }) {
   try {
     const { data } = await axios.post(`${API}/perfil/foto`, fd, { withCredentials: true });
     if (principal) {
-      perfil.value.fotos = perfil.value.fotos.length
-        ? [data.url, ...perfil.value.fotos.slice(1)]
-        : [data.url];
+      perfil.value.foto_principal = data.url;
     } else {
       perfil.value.fotos = [...perfil.value.fotos, data.url];
     }

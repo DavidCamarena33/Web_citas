@@ -466,6 +466,51 @@ function showToast(message) {
   }
 }
 
+@media (max-width: 640px) {
+  .px-6 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .navbar-inner {
+    height: 64px;
+  }
+
+  .logo-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .logo-text {
+    font-size: 1.05rem;
+  }
+
+  .navbar-right {
+    gap: 0.65rem;
+  }
+
+  .navbar-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .hamburger-btn {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-toast {
+    top: 76px;
+    left: 1rem;
+    right: 1rem;
+    max-width: none;
+  }
+}
+
 .nav-toast {
   position: fixed;
   top: 96px;
@@ -488,5 +533,14 @@ function showToast(message) {
 .toast-leave-to {
   opacity: 0;
   transform: translateY(-10px);
+}
+
+@media (max-width: 640px) {
+  .nav-toast {
+    top: 76px;
+    left: 1rem;
+    right: 1rem;
+    max-width: none;
+  }
 }
 </style>

@@ -43,8 +43,14 @@ export async function getPerfilById(id) {
   );
   if (!user) return null;
 
+  const [[fotoPrincipal]] = await connection.query(
+    `SELECT url FROM fotos_usuarios WHERE id_usuario = ? AND orden = 0 LIMIT 1`,
+    [id]
+  );
+  user.foto_principal = fotoPrincipal?.url || null;
+
   const [fotos] = await connection.query(
-    `SELECT url FROM fotos_usuarios WHERE id_usuario = ? ORDER BY orden`,
+    `SELECT url FROM fotos_usuarios WHERE id_usuario = ? AND orden > 0 ORDER BY orden`,
     [id]
   );
   user.fotos = fotos.map(f => f.url);
@@ -110,7 +116,9 @@ export async function getHostedPlansByUserId(id_usuario) {
 
 export async function subirFotoUsuario(id_usuario, filename) {
   const orden_max_result = await connection.query(
-    `SELECT COALESCE(MAX(orden), -1) + 1 AS next_orden FROM fotos_usuarios WHERE id_usuario = ?`,
+    `SELECT GREATEST(COALESCE(MAX(orden), 0), 0) + 1 AS next_orden
+     FROM fotos_usuarios
+     WHERE id_usuario = ?`,
     [id_usuario]
   );
   const next_orden = orden_max_result[0][0].next_orden;
@@ -124,7 +132,7 @@ export async function subirFotoUsuario(id_usuario, filename) {
 
 export async function actualizarFotoPrincipalUsuario(id_usuario, filename) {
   const [[fotoPrincipal]] = await connection.query(
-    `SELECT id FROM fotos_usuarios WHERE id_usuario = ? ORDER BY orden ASC LIMIT 1`,
+    `SELECT id FROM fotos_usuarios WHERE id_usuario = ? AND orden = 0 LIMIT 1`,
     [id_usuario]
   );
 

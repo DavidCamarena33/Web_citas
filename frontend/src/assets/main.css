@@ -78,6 +78,7 @@ a {
 }
 img {
   max-width: 100%;
+  height: auto;
 }
 button {
   cursor: pointer;
@@ -472,6 +473,53 @@ h4 {
 .page-content {
   padding-top: 72px; /* navbar height */
   flex: 1;
+}
+
+@media (max-width: 640px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  h1 {
+    font-size: 1.55rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  .container {
+    width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .page-content {
+    padding-top: 64px;
+  }
+
+  .btn {
+    min-height: 2.5rem;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .card {
+    border-radius: var(--radius-md);
+  }
+
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+
+  .fab {
+    right: 1rem;
+    bottom: 1rem;
+    width: 52px;
+    height: 52px;
+  }
 }
 
 /* ==========================================

@@ -2,6 +2,13 @@ import { crearPlan, getPlanRatingByUser, getPlanRatingEligibility, getPlanRating
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
+function toPublicPhotoUrl(photoUrl) {
+  if (!photoUrl) return null;
+  if (/^https?:\/\//i.test(photoUrl)) return photoUrl;
+  if (photoUrl.startsWith('/uploads/')) return `${BASE_URL}${photoUrl}`;
+  return `${BASE_URL}/uploads/${photoUrl}`;
+}
+
 const ratingReasonMessages = {
   PLAN_NOT_FOUND: "Plan no encontrado",
   OWN_PLAN: "No puedes valorar tu propio plan",
@@ -19,6 +26,7 @@ function normalizePlanId(value) {
 export async function listarPlanes(req, res, next) {
   try {
     const orientacion = req.query.orientacion;
+    const genero = req.query.genero;
     const modalidad = req.query.modalidad;
     const radio = req.query.radio;
     const userLat = req.query.lat;
@@ -27,7 +35,11 @@ export async function listarPlanes(req, res, next) {
     const fechaHasta = req.query.fecha_hasta || null;
 
     const hostOrientation =
-      orientacion && orientacion !== 'all' ? orientacion : null;
+      orientacion === 'hetero' || orientacion === 'bi' || orientacion === 'homosexual'
+        ? orientacion
+        : null;
+    const hostGender =
+      genero === 'hombre' || genero === 'mujer' ? genero : null;
     const capacityMode =
       modalidad === 'pareja' || modalidad === 'grupo' ? modalidad : null;
     const radioKm = radio ? Number(radio) : null;
@@ -35,6 +47,7 @@ export async function listarPlanes(req, res, next) {
     const planes = await getPlanes({
       excludeUserId: req.id,
       hostOrientation,
+      hostGender,
       capacityMode,
       lat: radioKm ? userLat : null,
       lng: radioKm ? userLng : null,
@@ -44,7 +57,7 @@ export async function listarPlanes(req, res, next) {
     });
     const planesConFoto = planes.map(p => ({
       ...p,
-      foto: p.foto ? `${BASE_URL}/uploads/${p.foto.split('/').pop()}` : null,
+      foto: toPublicPhotoUrl(p.foto),
     }));
     return res.status(200).json(planesConFoto);
   } catch (err) {
@@ -56,7 +69,8 @@ export async function detallePlan(req, res, next) {
   try {
     const plan = await getPlanById(req.params.id);
     if (!plan) return res.status(404).json({ message: 'Plan no encontrado' });
-    plan.fotos = plan.fotos.map(f => `${BASE_URL}/uploads/${f.split('/').pop()}`);
+    plan.foto = toPublicPhotoUrl(plan.foto);
+    plan.fotos = plan.fotos.map(toPublicPhotoUrl).filter(Boolean);
     return res.status(200).json(plan);
   } catch (err) {
     next(err);
@@ -102,7 +116,11 @@ export async function misPlanesHandler(req, res, next) {
   try {
     const id_usuario = req.id;
     const planes = await getPlanesByUsuario(id_usuario);
-    return res.status(200).json(planes);
+    const planesConFoto = planes.map((plan) => ({
+      ...plan,
+      foto: toPublicPhotoUrl(plan.foto),
+    }));
+    return res.status(200).json(planesConFoto);
   } catch (err) {
     next(err);
   }

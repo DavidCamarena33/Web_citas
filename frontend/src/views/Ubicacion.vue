@@ -11,6 +11,8 @@ const latitud = ref(null);
 const longitud = ref(null);
 const nombreCalle = ref('');
 const cargando = ref(false);
+const localizando = ref(false);
+const errorUbicacion = ref('');
 
 let map = null;
 let markerseleccion = null;
@@ -34,27 +36,69 @@ const inicializarMapa = async () => {
     }, 200);
 
     map.on('click', async (e) => {
-        latitud.value = e.latlng.lat;
-        longitud.value = e.latlng.lng;
-
-        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitud.value}&lon=${longitud.value}`;
-        
-        try {
-            const response = await fetch(url);
-            const data = await response.json();
-            
-            nombreCalle.value = data.address.road || data.display_name;
-
-            markerseleccion
-                .setLatLng(e.latlng)
-                .bindPopup("Ubicación seleccionada")
-                .openPopup();
-
-        } catch (error) {
-            console.error("Error al obtener dirección:", error);
-            nombreCalle.value = "Dirección no encontrada";
-        }
+        await seleccionarUbicacion(e.latlng.lat, e.latlng.lng);
     });
+};
+
+const seleccionarUbicacion = async (lat, lng, centrarMapa = false) => {
+    errorUbicacion.value = '';
+    latitud.value = lat;
+    longitud.value = lng;
+
+    if (markerseleccion) {
+        markerseleccion
+            .setLatLng([lat, lng])
+            .bindPopup("Ubicación seleccionada")
+            .openPopup();
+    }
+
+    if (centrarMapa && map) {
+        map.setView([lat, lng], 15);
+    }
+
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        nombreCalle.value = data.address?.road || data.display_name || "Ubicación seleccionada";
+    } catch (error) {
+        console.error("Error al obtener dirección:", error);
+        nombreCalle.value = "Dirección no encontrada";
+    }
+};
+
+const usarUbicacionActual = () => {
+    errorUbicacion.value = '';
+
+    if (!navigator.geolocation) {
+        errorUbicacion.value = "Tu navegador no permite obtener la ubicación automáticamente.";
+        return;
+    }
+
+    localizando.value = true;
+
+    navigator.geolocation.getCurrentPosition(
+        async (posicion) => {
+            await seleccionarUbicacion(
+                posicion.coords.latitude,
+                posicion.coords.longitude,
+                true
+            );
+            localizando.value = false;
+        },
+        (error) => {
+            console.error("Error al obtener ubicación actual:", error);
+            errorUbicacion.value = "No se pudo obtener tu ubicación. Revisa los permisos del navegador.";
+            localizando.value = false;
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
+        }
+    );
 };
 
 const guardarUbicacion = async () => {
@@ -98,6 +142,18 @@ onMounted(() => {
       </div>
 
       <div class="bloque-inferior">
+        <button
+          type="button"
+          class="accion-localizar"
+          :disabled="localizando"
+          @click="usarUbicacionActual"
+        >
+          <span v-if="!localizando">Usar mi ubicación actual</span>
+          <span v-else>Buscando ubicación...</span>
+        </button>
+
+        <p v-if="errorUbicacion" class="mensaje-error">{{ errorUbicacion }}</p>
+
         <div v-if="nombreCalle" class="ficha-resultado fade-arriba">
           <p class="mini-titulo">Dirección seleccionada:</p>
           <p class="dato-direccion">{{ nombreCalle }}</p>
@@ -152,6 +208,36 @@ onMounted(() => {
 
 .bloque-inferior {
   margin-top: 20px;
+}
+
+.accion-localizar {
+  background-color: #800080;
+  color: white;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: background 0.3s ease;
+}
+
+.accion-localizar:hover {
+  background-color: #6A006A;
+}
+
+.accion-localizar:disabled {
+  background-color: #C8A2C8;
+  cursor: not-allowed;
+}
+
+.mensaje-error {
+  color: #DB7093;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 12px;
 }
 
 .ficha-resultado {

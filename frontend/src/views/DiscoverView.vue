@@ -61,6 +61,36 @@
             </div>
 
             <div class="filter-section">
+              <span class="filter-section-label">Creador del plan</span>
+              <div class="segmented-control">
+                <button
+                  v-for="option in generoOptions"
+                  :key="option.value"
+                  class="segmented-option"
+                  :class="{
+                    'segmented-active': selectedGenero === option.value,
+                  }"
+                  @click="selectedGenero = option.value"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+              <div class="segmented-control creator-orientation-control">
+                <button
+                  v-for="option in orientacionOptions"
+                  :key="option.value"
+                  class="segmented-option"
+                  :class="{
+                    'segmented-active': selectedOrientacion === option.value,
+                  }"
+                  @click="selectedOrientacion = option.value"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </div>
+
+            <div class="filter-section">
               <span class="filter-section-label">Favoritos</span>
               <div class="chip-row">
                 <button
@@ -240,6 +270,8 @@ const drawerOpen = ref(false);
 const toast = ref("");
 const selectedCategoria = ref("all");
 const selectedModalidad = ref(null);
+const selectedGenero = ref("all");
+const selectedOrientacion = ref("all");
 const selectedRadio = ref(null);
 const fechaDesde = ref("");
 const fechaHasta = ref("");
@@ -257,6 +289,8 @@ const activeFilterCount = computed(() => {
   let count = 0;
   if (selectedCategoria.value !== "all") count++;
   if (selectedModalidad.value !== null) count++;
+  if (selectedGenero.value !== "all") count++;
+  if (selectedOrientacion.value !== "all") count++;
   if (selectedRadio.value !== null) count++;
   if (fechaDesde.value) count++;
   if (fechaHasta.value) count++;
@@ -277,6 +311,19 @@ const modalidadOptions = [
   { label: "Pareja", value: "pareja" },
   { label: "Todos", value: null },
   { label: "Grupo", value: "grupo" },
+];
+
+const generoOptions = [
+  { label: "Todos", value: "all" },
+  { label: "Hombre", value: "hombre" },
+  { label: "Mujer", value: "mujer" },
+];
+
+const orientacionOptions = [
+  { label: "Todas", value: "all" },
+  { label: "Hetero", value: "hetero" },
+  { label: "Bi", value: "bi" },
+  { label: "Homosexual", value: "homosexual" },
 ];
 
 const joinStatusByPlanId = computed(() => {
@@ -307,8 +354,14 @@ const filteredPlanes = computed(() => {
     const matchesCategoria =
       selectedCategoria.value === "all" ||
       plan.categoria === selectedCategoria.value;
+    const matchesGenero =
+      selectedGenero.value === "all" ||
+      plan.host_genero === selectedGenero.value;
+    const matchesOrientacion =
+      selectedOrientacion.value === "all" ||
+      plan.host_orientacion === selectedOrientacion.value;
 
-    return matchesCategoria;
+    return matchesCategoria && matchesGenero && matchesOrientacion;
   });
 
   if (showFavoritesOnly.value) {
@@ -346,6 +399,10 @@ const categorias = computed(() => {
 const categoriasConTodas = computed(() => ["all", ...categorias.value]);
 
 onMounted(async () => {
+  if (window.matchMedia?.("(max-width: 640px)").matches) {
+    filtersExpanded.value = false;
+  }
+
   const [allIntereses] = await Promise.all([
     store.getIntereses(),
     store.fetchMisPlanes(),
@@ -360,7 +417,14 @@ watch([selectedCategoria, showFavoritesOnly], () => {
 });
 
 watch(
-  [selectedModalidad, selectedRadio, fechaDesde, fechaHasta],
+  [
+    selectedModalidad,
+    selectedGenero,
+    selectedOrientacion,
+    selectedRadio,
+    fechaDesde,
+    fechaHasta,
+  ],
   () => {
     visiblePlanesCount.value = PLANES_BATCH_SIZE;
     refetchPlanes();
@@ -427,6 +491,8 @@ function showToast(msg) {
 
 async function refetchPlanes() {
   await store.fetchPlanes({
+    orientacion: selectedOrientacion.value,
+    genero: selectedGenero.value,
     modalidad: selectedModalidad.value,
     radio: selectedRadio.value,
     lat: userCoords.value?.lat || null,
@@ -659,6 +725,10 @@ async function loadUserContext() {
   padding: 0.22rem;
   gap: 0.1rem;
   width: fit-content;
+}
+
+.creator-orientation-control {
+  margin-top: 0.5rem;
 }
 
 .segmented-option {
@@ -965,26 +1035,56 @@ async function loadUserContext() {
 }
 
 @media (max-width: 640px) {
+  .page-layout {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
   .discover-layout {
-    padding-top: 68px;
+    padding-top: 64px;
+    overflow: visible;
   }
 
   .discover-sidebar {
+    position: static;
     padding: 1rem 1rem 0.75rem;
-    margin: 0.4rem 0.4rem 0 0.4rem;
+    margin: 0;
     border-radius: var(--radius-md);
     gap: 0.5rem;
-    max-height: 55vh;
-    top: 68px;
+    max-height: none;
+    overflow: visible;
   }
 
   .discover-main {
     padding: 1rem 1rem 5rem;
+    overflow: visible;
   }
 
   .plans-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .discover-title {
+    font-size: 1.2rem;
+  }
+
+  .filter-body {
+    max-height: none;
+  }
+
+  .date-range {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-separator {
+    display: none;
+  }
+
+  .date-input-wrap {
+    width: 100%;
   }
 
   .filter-section-label {

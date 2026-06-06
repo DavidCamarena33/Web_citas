@@ -339,4 +339,11 @@ function flyToUser() {
   font-size: 0.85rem !important;
   line-height: 1.4 !important;
 }
+
+@media (max-width: 640px) {
+  .plan-map-wrap {
+    height: 220px;
+    border-radius: var(--radius-md);
+  }
+}
 </style>

@@ -18,6 +18,7 @@ export const usePlanesStore = defineStore('planes', {
           : options || {};
       const {
         orientacion = 'all',
+        genero = 'all',
         modalidad = null,
         radio = null,
         lat = null,
@@ -32,6 +33,7 @@ export const usePlanesStore = defineStore('planes', {
           withCredentials: true,
           params: {
             ...(orientacion && orientacion !== 'all' ? { orientacion } : {}),
+            ...(genero && genero !== 'all' ? { genero } : {}),
             ...(modalidad ? { modalidad } : {}),
             ...(radio ? { radio } : {}),
             ...(radio && lat ? { lat } : {}),

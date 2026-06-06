@@ -87,6 +87,7 @@ export async function getPerfil(req, res, next) {
     const profileId = Number(req.params.id || req.id);
     const perfil = await getPerfilById(profileId);
     if (!perfil) return res.status(404).json({ message: 'Usuario no encontrado' });
+    perfil.foto_principal = toPublicPhotoUrl(perfil.foto_principal);
     perfil.fotos = perfil.fotos.map(toPublicPhotoUrl).filter(Boolean);
     return res.status(200).json(perfil);
   } catch (err) {
@@ -104,7 +105,7 @@ export async function getPlanesHostedByUser(req, res, next) {
     const planes = await getHostedPlansByUserId(profileId);
     const planesConFoto = planes.map((plan) => ({
       ...plan,
-      foto: plan.foto ? `${BASE_URL}/uploads/${plan.foto.split('/').pop()}` : null,
+      foto: toPublicPhotoUrl(plan.foto),
     }));
     return res.status(200).json(planesConFoto);
   } catch (err) {
@@ -137,7 +138,7 @@ export async function actualizarFotoPrincipal(req, res, next) {
     await actualizarFotoPrincipalUsuario(req.id, req.file.filename);
     return res.status(200).json({
       message: 'Foto principal actualizada',
-      url: `${BASE_URL}/uploads/${req.file.filename}`
+      url: toPublicPhotoUrl(req.file.filename)
     });
   } catch (err) {
     next(err);
